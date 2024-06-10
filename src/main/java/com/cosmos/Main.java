@@ -1,7 +1,6 @@
 package com.cosmos;
 
 import org.json.JSONObject;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,7 +27,6 @@ public class Main {
         } catch (IOException | SQLException e) {
             System.out.println(e.getMessage());
         }
-
     }
     public static void settings() {
         File file = new File("Postgres credentials.txt");

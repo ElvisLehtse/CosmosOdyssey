@@ -203,7 +203,7 @@ public class PostgresWriter implements DatabaseHandler {
                 String providersId = providersObject.getString("id");
                 JSONObject company = (JSONObject) providersObject.get("company");
                 String companyId = company.getString("id");
-                int price = providersObject.getInt("price");
+                double price = providersObject.getDouble("price");
                 String flightStart = providersObject.getString("flightStart");
                 String flightStartFormatted = flightStart.replace("T", " ").replace("Z", "");
                 String flightEnd = providersObject.getString("flightEnd");
@@ -212,7 +212,7 @@ public class PostgresWriter implements DatabaseHandler {
                 preparedStatement.setObject(1, UUID.fromString(providersId));
                 preparedStatement.setObject(2, UUID.fromString(companyId));
                 preparedStatement.setObject(3, UUID.fromString(routeInfoId));
-                preparedStatement.setInt(4, price);
+                preparedStatement.setDouble(4, price);
                 preparedStatement.setTimestamp(5, Timestamp.valueOf(flightStartFormatted));
                 preparedStatement.setTimestamp(6, Timestamp.valueOf(flightEndFormatted));
                 preparedStatement.execute();
