@@ -12,9 +12,7 @@ public class BestDealCalculator {
     public BestDealCalculator (Connection connection) {
         this.connection = connection;
     }
-
-    List<List<String>> travelList;
-    static List<Route> travelMap = new ArrayList<>();
+    static List<Route> travelList = new ArrayList<>();
     static List<Planet> planetList = new ArrayList<>();
 
     static class Route {
@@ -43,27 +41,19 @@ public class BestDealCalculator {
         ResultSet resultSet = readStatement.executeQuery();
 
         while (resultSet.next()) {
-           travelMap.add(new Route(resultSet.getString(3), resultSet.getString(4)));
+           travelList.add(new Route(resultSet.getString(3), resultSet.getString(4)));
         }
     }
 
-    private void findRoutes(String originPlanet, String destinationPlanet, List<String> currentPath, List<String> allPaths, List<String> currentPathPrettyPrint) {
+    private void findRoutes(String originPlanet, String destinationPlanet, List<String> currentPath, List<List<String>> allPaths, List<String> currentPathPrettyPrint) {
         currentPath.add(originPlanet);
 
-        for (int i = 0; i < planetList.size(); i++) {
-            if (planetList.get(i).uuid.equals(originPlanet)) {
-                currentPathPrettyPrint.add(planetList.get(i).name);
-                break;
-            }
-        }
-
         if (originPlanet.equals(destinationPlanet)) {
-            travelList.add(currentPath);
-            allPaths.add(String.join(" -> ", currentPathPrettyPrint));
+            allPaths.add(currentPath);
         }
-        for (int i = 0; i < travelMap.size(); i++) {
-            if (travelMap.get(i).originPlanetUuid.equals(originPlanet)) {
-                String destination = travelMap.get(i).destinationPlanetUuid;
+        for (int i = 0; i < travelList.size(); i++) {
+            if (travelList.get(i).originPlanetUuid.equals(originPlanet)) {
+                String destination = travelList.get(i).destinationPlanetUuid;
                 if (!currentPath.contains(destination)) {
                     findRoutes(destination, destinationPlanet, new ArrayList<>(currentPath), allPaths, new ArrayList<>(currentPathPrettyPrint));
                 }
@@ -76,16 +66,25 @@ public class BestDealCalculator {
         initiateRoutes();
         List<String> currentPath = new ArrayList<>();
         List<String> currentPathPrettyPrint = new ArrayList<>();
-        List<String> allPaths = new ArrayList<>();
-        travelList = new ArrayList<>();
+        List<List<String>> allPaths = new ArrayList<>();
         findRoutes(originPlanet, destinationPlanet, currentPath, allPaths, currentPathPrettyPrint);
-        for (int i = 0; i < travelList.size(); i++) {
-            for (int j = 0; j < travelList.get(i).size(); j++) {
-                System.out.println(travelList.get(i).get(j));
-            }
-            System.out.println();
-        }
+        prettyPrint(allPaths, originPlanet, destinationPlanet);
+    }
 
+    private void prettyPrint(List<List<String>> allPaths, String originPlanet, String destinationPlanet) {
+        List<String> prettyPrintPaths = new ArrayList<>();
+        for (int i = 0; i < allPaths.size(); i++) {
+            List<String> tempList = new ArrayList<>();
+            for (int j = 0; j < allPaths.get(i).size(); j++) {
+                for (int k = 0; k < planetList.size(); k++) {
+                    if (planetList.get(k).uuid.equals(allPaths.get(i).get(j))) {
+                        tempList.add(planetList.get(k).name);
+                        break;
+                    }
+                }
+            }
+            prettyPrintPaths.add(String.join(" -> ", tempList));
+        }
 
         String origin = "";
         String destination = "";
@@ -103,8 +102,9 @@ public class BestDealCalculator {
         }
 
         System.out.println("All possible routes from " + origin + " to " + destination + ":");
-        for (String path : allPaths) {
+        for (String path : prettyPrintPaths) {
             System.out.println(path);
         }
     }
 }
+
