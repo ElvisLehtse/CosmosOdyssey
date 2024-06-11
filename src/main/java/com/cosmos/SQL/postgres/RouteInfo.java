@@ -2,11 +2,11 @@ package com.cosmos.SQL.postgres;
 
 public class RouteInfo {
 
-    String uuid;
-    String priceListUuid;
-    String fromPlanetUuid;
-    String toPlanetUuid;
-    Long distance;
+    private final String uuid;
+    private final String priceListUuid;
+    private final String fromPlanetUuid;
+    private final String toPlanetUuid;
+    private final Long distance;
 
     public String getUuid() {
         return uuid;

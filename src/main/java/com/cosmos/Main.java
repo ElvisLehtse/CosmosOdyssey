@@ -25,8 +25,8 @@ public class Main {
        //     SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(connection);
        //     sqlDatabaseTableCreator.createAllTables(apiData);
             BestDealCalculator bestDealCalculator = new BestDealCalculator(connection);
-       //     bestDealCalculator.calculateBestPrice("Mercury", "Neptune");
-            bestDealCalculator.routes();
+            bestDealCalculator.calculateBestPrice("61adebf4-387a-4035-bdbb-12999d3673bf", "eaf7cff3-3e58-414e-9ecb-a6acd428ed2d");
+
         } catch (IOException | SQLException e) {
             System.out.println(e.getMessage());
         }
