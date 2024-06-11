@@ -1,5 +1,6 @@
-package com.cosmos;
+package com.cosmos.SQL.postgres;
 
+import com.cosmos.SQL.SQLDatabaseTableCreator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -7,49 +8,46 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class PostgresWriter implements DatabaseHandler {
-    public String host;
-    public String port;
-    public String username;
-    public String password;
-    public String database;
+public class PostgresTableCreator implements SQLDatabaseTableCreator {
 
-    public PostgresWriter (String host, String port, String database, String username, String password) {
-        this.host = host;
-        this.port = port;
-        this.database = database;
-        this.username = username;
-        this.password = password;
+    private JSONObject apiData;
+    private final Connection connection;
+
+    public PostgresTableCreator (Connection connection) {
+        this.connection = connection;
+
     }
 
-    private Connection connection() throws SQLException {
-        return DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + database, username, password);
+    public void createAllTables(JSONObject apiData) throws SQLException {
+        this.apiData = apiData;
+        insertPriceListTable();
+        insertPlanetTable();
+        insertRouteInfoTable();
+        insertCompanyTable();
+        insertProviderTable();
     }
 
-    public void insertPriceListToSQL(JSONObject apiData) throws SQLException {
+    private void insertPriceListTable() throws SQLException {
         String uuid = apiData.getString("id");
         String validUntil = apiData.getString("validUntil");
         String validUntilFormatted = validUntil.replace("T", " ").replace("Z", "");
         Timestamp timestamp = Timestamp.valueOf(validUntilFormatted);
 
-        Connection con = connection();
         String sql = "INSERT INTO price_list(" +
                 "uuid, valid_until)" +
                 "VALUES (?, ?)";
 
-        PreparedStatement preparedStatement = con.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.setObject(1, UUID.fromString(uuid));
         preparedStatement.setTimestamp(2, timestamp);
         preparedStatement.execute();
-        con.close();
     }
 
-    public void insertPlanetToSQL(JSONObject apiData) throws SQLException {
-        Connection con = connection();
+    private void insertPlanetTable() throws SQLException {
         String sql = "INSERT INTO planet(" +
                 "uuid, name)" +
                 "VALUES (?, ?)";
-        PreparedStatement preparedStatement = con.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
         JSONArray legsArray = apiData.getJSONArray("legs");
         for (int i = 0; i < legsArray.length(); i++) {
@@ -59,7 +57,7 @@ public class PostgresWriter implements DatabaseHandler {
             JSONObject to = (JSONObject) routeInfo.get("to");
 
             String sqlRead = "SELECT name FROM planet;";
-            PreparedStatement readStatement = con.prepareStatement(sqlRead);
+            PreparedStatement readStatement = connection.prepareStatement(sqlRead);
             ResultSet resultSet = readStatement.executeQuery();
 
             ArrayList<String> planetList = new ArrayList<>();
@@ -72,7 +70,6 @@ public class PostgresWriter implements DatabaseHandler {
             name = to.getString("name");
             checkUniquesAndInsert(planetList, name, preparedStatement);
         }
-        con.close();
     }
 
     private void checkUniquesAndInsert(ArrayList<String> planetList, String name, PreparedStatement preparedStatement) throws SQLException {
@@ -90,15 +87,14 @@ public class PostgresWriter implements DatabaseHandler {
             preparedStatement.execute();
         }
     }
-    public void insertRouteInfoToSQL(JSONObject apiData) throws SQLException {
-        Connection con = connection();
+    private void insertRouteInfoTable() throws SQLException {
         String sql = "INSERT INTO route_info(" +
                 "uuid, price_list_uuid, from_planet_uuid, to_planet_uuid, distance)" +
                 "VALUES (?, ?, ?, ?, ?)";
-        PreparedStatement preparedStatement = con.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
         String sqlReadPriceList = "SELECT uuid FROM price_list;";
-        PreparedStatement readStatement = con.prepareStatement(sqlReadPriceList);
+        PreparedStatement readStatement = connection.prepareStatement(sqlReadPriceList);
         ResultSet resultSet = readStatement.executeQuery();
         resultSet.next();
         String priceListUuid = resultSet.getString(1);
@@ -113,7 +109,7 @@ public class PostgresWriter implements DatabaseHandler {
             JSONObject to = (JSONObject) routeInfo.get("to");
 
             String sqlReadPlanet = "SELECT * FROM planet;";
-            readStatement = con.prepareStatement(sqlReadPlanet);
+            readStatement = connection.prepareStatement(sqlReadPlanet);
             resultSet = readStatement.executeQuery();
 
             ArrayList<Planet> planetList = new ArrayList<>();
@@ -140,15 +136,13 @@ public class PostgresWriter implements DatabaseHandler {
             preparedStatement.setLong(5, distance);
             preparedStatement.execute();
         }
-        con.close();
     }
 
-    public void insertCompanyToSQL(JSONObject apiData) throws SQLException {
-        Connection con = connection();
+    private void insertCompanyTable() throws SQLException {
         String sql = "INSERT INTO company(" +
                 "uuid, name)" +
                 "VALUES (?, ?)";
-        PreparedStatement preparedStatement = con.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
         JSONArray legsArray = apiData.getJSONArray("legs");
         for (int i = 0; i < legsArray.length(); i++) {
@@ -161,7 +155,7 @@ public class PostgresWriter implements DatabaseHandler {
                 String name = company.getString("name");
 
                 String sqlRead = "SELECT uuid FROM company;";
-                PreparedStatement readStatement = con.prepareStatement(sqlRead);
+                PreparedStatement readStatement = connection.prepareStatement(sqlRead);
                 ResultSet resultSet = readStatement.executeQuery();
 
                 ArrayList<String> planetList = new ArrayList<>();
@@ -182,15 +176,13 @@ public class PostgresWriter implements DatabaseHandler {
                 }
             }
         }
-        con.close();
     }
 
-    public void insertProviderToSQL(JSONObject apiData) throws SQLException {
-        Connection con = connection();
+    private void insertProviderTable() throws SQLException {
         String sql = "INSERT INTO provider(" +
                 "uuid, company_uuid, route_info_uuid, price, flight_start, flight_end)" +
                 "VALUES (?, ?, ?, ?, ?, ?)";
-        PreparedStatement preparedStatement = con.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
         JSONArray legsArray = apiData.getJSONArray("legs");
         for (int i = 0; i < legsArray.length(); i++) {
@@ -218,6 +210,5 @@ public class PostgresWriter implements DatabaseHandler {
                 preparedStatement.execute();
             }
         }
-        con.close();
     }
 }

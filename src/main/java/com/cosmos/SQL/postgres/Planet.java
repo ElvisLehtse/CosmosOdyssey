@@ -1,7 +1,6 @@
-package com.cosmos;
+package com.cosmos.SQL.postgres;
 
 public class Planet {
-
     String uuid;
     String name;
 

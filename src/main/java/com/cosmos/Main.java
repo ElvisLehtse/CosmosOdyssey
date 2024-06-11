@@ -1,9 +1,12 @@
 package com.cosmos;
 
+import com.cosmos.SQL.postgres.BestDealCalculator;
+import com.cosmos.SQL.postgres.PostgresDatabaseConnector;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Scanner;
 
@@ -15,15 +18,15 @@ public class Main {
     static String password;
     public static void main(String[] args) {
         settings();
-        DatabaseHandler databaseHandler = new PostgresWriter(host, port, database, username, password);
+        PostgresDatabaseConnector postgresDatabaseConnector = new PostgresDatabaseConnector(host, port, database, username, password);
         APIReader routesManager = new APIReader();
-        try {
+        try (Connection connection = postgresDatabaseConnector.connection()){
             JSONObject apiData = routesManager.getJsonDataFromAPI();
-            databaseHandler.insertPriceListToSQL(apiData);
-            databaseHandler.insertPlanetToSQL(apiData);
-            databaseHandler.insertRouteInfoToSQL(apiData);
-            databaseHandler.insertCompanyToSQL(apiData);
-            databaseHandler.insertProviderToSQL(apiData);
+       //     SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(connection);
+       //     sqlDatabaseTableCreator.createAllTables(apiData);
+            BestDealCalculator bestDealCalculator = new BestDealCalculator(connection);
+       //     bestDealCalculator.calculateBestPrice("Mercury", "Neptune");
+            bestDealCalculator.routes();
         } catch (IOException | SQLException e) {
             System.out.println(e.getMessage());
         }

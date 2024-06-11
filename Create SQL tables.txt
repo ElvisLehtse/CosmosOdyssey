@@ -1,0 +1,51 @@
+DROP TABLE IF EXISTS price_list CASCADE;
+DROP TABLE IF EXISTS planet CASCADE;
+DROP TABLE IF EXISTS route_info CASCADE;
+DROP TABLE IF EXISTS company CASCADE;
+DROP TABLE IF EXISTS provider CASCADE;
+DROP TABLE IF EXISTS reservation CASCADE;
+DROP TABLE IF EXISTS reserved_routes;
+
+CREATE TABLE price_list (
+  uuid UUID PRIMARY KEY,
+  valid_until TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE planet (
+  uuid UUID PRIMARY KEY, -- currently cannot be taken from raw data as it's not the same there, json data incorrect?!?! Generate yourself (ver 4 UUID)
+  name VARCHAR(32) UNIQUE NOT NULL
+);
+
+CREATE TABLE route_info (
+  uuid UUID PRIMARY KEY,
+  price_list_uuid  UUID REFERENCES price_list (uuid) NOT NULL,
+  from_planet_uuid UUID REFERENCES planet (uuid)     NOT NULL,
+  to_planet_uuid   UUID REFERENCES planet (uuid)     NOT NULL,
+  distance         BIGINT                            NOT NULL
+);
+
+CREATE TABLE company (
+  uuid UUID PRIMARY KEY,
+  name VARCHAR(64) UNIQUE NOT NULL
+);
+
+CREATE TABLE provider (
+  uuid            UUID PRIMARY KEY,
+  company_uuid    UUID REFERENCES company (uuid)    NOT NULL,
+  route_info_uuid UUID REFERENCES route_info (uuid) NOT NULL,
+  price           NUMERIC                           NOT NULL,
+  flight_start    TIMESTAMP WITH TIME ZONE          NOT NULL,
+  flight_end      TIMESTAMP WITH TIME ZONE          NOT NULL
+);
+
+CREATE TABLE reservation (
+  id         SERIAL PRIMARY KEY,
+  first_name VARCHAR(32) NOT NULL,
+  last_name  VARCHAR(32) NOT NULL
+);
+
+CREATE TABLE reserved_routes (
+  id               SERIAL PRIMARY KEY,
+  reservation_uuid SERIAL REFERENCES reservation (id) NOT NULL,
+  provider_uuid    UUID REFERENCES provider (uuid)    NOT NULL
+);
