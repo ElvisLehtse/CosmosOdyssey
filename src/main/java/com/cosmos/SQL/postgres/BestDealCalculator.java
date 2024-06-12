@@ -26,9 +26,9 @@ public class BestDealCalculator {
         List<List<String>> allRouteUuid = new ArrayList<>();
 
         findAllPossibleRoutes(originPlanet, destinationPlanet, routeUuid, currentPath, allRouteUuid, null);
-        List<List<Provider>> priceList = new ArrayList<>();
-        allRouteUuid = filterByCompany(companyList, allRouteUuid, priceList);
-        prettyPrintPaths(getPaths(originPlanet, allRouteUuid), originPlanet, destinationPlanet, getLowestPrice(priceList), companyList);
+        List<List<Provider>> suitableProvidersByRoute = new ArrayList<>();
+        allRouteUuid = filterByCompany(companyList, allRouteUuid, suitableProvidersByRoute);
+        prettyPrintPaths(getPaths(originPlanet, allRouteUuid), originPlanet, destinationPlanet, getLowestPrice(suitableProvidersByRoute));
     }
 
     private void findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath, List<String> routeUuid, List<List<String>> allRouteUuid, String uuid) {
@@ -50,7 +50,7 @@ public class BestDealCalculator {
         }
     }
 
-    private List<List<String>> filterByCompany(List<String> companyList, List<List<String>> allRouteUuid, List<List<Provider>> priceList) {
+    private List<List<String>> filterByCompany(List<String> companyList, List<List<String>> allRouteUuid, List<List<Provider>> suitableProvidersByRoute) {
         List<Provider> suitableProviders = new ArrayList<>();
         List<List<String>> suitableRoutesUuid = new ArrayList<>();
         List<List<String>> newAllRoutesUuid = new ArrayList<>();
@@ -61,26 +61,26 @@ public class BestDealCalculator {
         }
 
         for (int j = 0; j < allRouteUuid.size(); j++) {
-            List<Provider> tempPrice = new ArrayList<>();
-            List<String> tempList = new ArrayList<>();
+            List<Provider> tempListForSuitableProvidersByRoute = new ArrayList<>();
+            List<String> tempListForSuitableRoutesUuid = new ArrayList<>();
             for (int k = 0; k < allRouteUuid.get(j).size(); k++) {
                 for (int i = 0; i < suitableProviders.size(); i++) {
 
                     if (allRouteUuid.get(j).get(k).equals(suitableProviders.get(i).getRoute_info_uuid())) {
-                        if (!tempList.contains(suitableProviders.get(i).getRoute_info_uuid())) {
-                            tempList.add(suitableProviders.get(i).getRoute_info_uuid());
+                        if (!tempListForSuitableRoutesUuid.contains(suitableProviders.get(i).getRoute_info_uuid())) {
+                            tempListForSuitableRoutesUuid.add(suitableProviders.get(i).getRoute_info_uuid());
                         }
-                        if (!tempPrice.contains(suitableProviders.get(i))) {
-                            tempPrice.add(suitableProviders.get(i));
+                        if (!tempListForSuitableProvidersByRoute.contains(suitableProviders.get(i))) {
+                            tempListForSuitableProvidersByRoute.add(suitableProviders.get(i));
                         }
                     }
                 }
             }
-            if (!tempPrice.isEmpty() && !priceList.contains(tempPrice)) {
-                priceList.add(tempPrice);
+            if (!tempListForSuitableProvidersByRoute.isEmpty() && !suitableProvidersByRoute.contains(tempListForSuitableProvidersByRoute)) {
+                suitableProvidersByRoute.add(tempListForSuitableProvidersByRoute);
             }
-            if (!tempList.isEmpty() && !suitableRoutesUuid.contains(tempList)) {
-                suitableRoutesUuid.add(tempList);
+            if (!tempListForSuitableRoutesUuid.isEmpty() && !suitableRoutesUuid.contains(tempListForSuitableRoutesUuid)) {
+                suitableRoutesUuid.add(tempListForSuitableRoutesUuid);
             }
         }
 
@@ -110,30 +110,38 @@ public class BestDealCalculator {
     }
 
 
-    private List<Long> getLowestPrice(List<List<Provider>> priceList) {
-        List<Long> totalPrice = new ArrayList<>();
-
-        for (int i = 0; i < priceList.size(); i++) {
-            long tempPrice = 0;
-            Map<String, Long> lowestValue = new HashMap<>();
-            for (int j = 0; j < priceList.get(i).size(); j++) {
-                if (lowestValue.containsKey(priceList.get(i).get(j).getRoute_info_uuid())) {
-                    if (priceList.get(i).get(j).getPrice() < lowestValue.get(priceList.get(i).get(j).getRoute_info_uuid())) {
-                        lowestValue.put(priceList.get(i).get(j).getRoute_info_uuid(), priceList.get(i).get(j).getPrice());
+    private List<List<Provider>> getLowestPrice(List<List<Provider>> suitableProvidersByRoute) {
+        List<List<Provider>> providerListWithSelectedCompanies = new ArrayList<>();
+        for (int i = 0; i < suitableProvidersByRoute.size(); i++) {
+            List<Provider> tempList = new ArrayList<>();
+            for (int j = 0; j < suitableProvidersByRoute.get(i).size(); j++) {
+                tempList.add(suitableProvidersByRoute.get(i).get(j));
+                for (int k = 0; k < tempList.size(); k++) {
+                    if (tempList.get(k).getRoute_info_uuid().equals(suitableProvidersByRoute.get(i).get(j).getRoute_info_uuid())) {
+                        if (tempList.get(k).getPrice() > suitableProvidersByRoute.get(i).get(j).getPrice()) {
+                            tempList.remove(k);
+                        } else if (tempList.get(k).getPrice() < suitableProvidersByRoute.get(i).get(j).getPrice()) {
+                            tempList.removeLast();
+                        }
                     }
-                } else {
-                    lowestValue.put(priceList.get(i).get(j).getRoute_info_uuid(), priceList.get(i).get(j).getPrice());
                 }
             }
-            for (Map.Entry<String, Long> entry : lowestValue.entrySet()) {
-                tempPrice = tempPrice + entry.getValue();
+            providerListWithSelectedCompanies.add(tempList);
+        }
+        return providerListWithSelectedCompanies;
+    }
+
+    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet, String destinationPlanet, List<List<Provider>> providerListWithSelectedCompanies) {
+
+        List<Long> totalPrice = new ArrayList<>();
+        for (int i = 0; i < providerListWithSelectedCompanies.size(); i++) {
+            long tempPrice = 0;
+            for (int j = 0; j < providerListWithSelectedCompanies.get(i).size(); j++) {
+                tempPrice = tempPrice + providerListWithSelectedCompanies.get(i).get(j).getPrice();
             }
             totalPrice.add(tempPrice);
         }
-        return totalPrice;
-    }
 
-    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet, String destinationPlanet, List<Long> totalPrice, List<String> companyList) {
         List<String> prettyPrint = new ArrayList<>();
         for (int i = 0; i < allPaths.size(); i++) {
             List<String> allPath = allPaths.get(i);
@@ -166,11 +174,24 @@ public class BestDealCalculator {
             }
         }
 
+        List<String> selectedCompanies = new ArrayList<>();
+        for (int i = 0; i < providerListWithSelectedCompanies.size(); i++) {
+            for (int j = 0; j < providerListWithSelectedCompanies.get(i).size(); j++) {
+                if (!selectedCompanies.contains(providerListWithSelectedCompanies.get(i).get(j).getCompany_uuid())) {
+                    selectedCompanies.add(providerListWithSelectedCompanies.get(i).get(j).getCompany_uuid());
+                }
+            }
+        }
+
         System.out.println(STR."All possible routes from \{origin} to \{destination}:");
         for (String path : prettyPrint) {
             System.out.println(path);
         }
+
         System.out.println("When traveling with companies: ");
+        for (int i = 0; i < selectedCompanies.size(); i++) {
+            System.out.println(selectedCompanies.get(i));
+        }
     }
 }
 
