@@ -1,6 +1,7 @@
 package com.cosmos.SQL.postgres;
 
 import com.cosmos.SQL.SQLDatabaseTableCreator;
+import com.cosmos.SQL.postgres.initiator.Planet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -121,15 +122,15 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
             preparedStatement.setObject(2,UUID.fromString(priceListUuid));
             String name = from.getString("name");
             for (Planet planet : planetList) {
-                if (name.equals(planet.name)) {
-                    preparedStatement.setObject(3, UUID.fromString(planet.uuid));
+                if (name.equals(planet.getName())) {
+                    preparedStatement.setObject(3, UUID.fromString(planet.getUuid()));
                     break;
                 }
             }
             name = to.getString("name");
             for (Planet planet : planetList) {
-                if (name.equals(planet.name)) {
-                    preparedStatement.setObject(4, UUID.fromString(planet.uuid));
+                if (name.equals(planet.getName())) {
+                    preparedStatement.setObject(4, UUID.fromString(planet.getUuid()));
                     break;
                 }
             }

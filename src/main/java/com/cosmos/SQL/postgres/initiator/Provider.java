@@ -1,4 +1,4 @@
-package com.cosmos.SQL.postgres;
+package com.cosmos.SQL.postgres.initiator;
 
 import java.sql.Timestamp;
 
@@ -7,7 +7,7 @@ public class Provider {
     private final String uuid;
     private final String company_uuid;
     private final String route_info_uuid;
-    private final int price;
+    private final Long price;
     private final Timestamp flight_start;
     private final Timestamp flight_end;
 
@@ -23,7 +23,7 @@ public class Provider {
         return route_info_uuid;
     }
 
-    public int getPrice() {
+    public Long getPrice() {
         return price;
     }
 
@@ -35,7 +35,7 @@ public class Provider {
         return flight_end;
     }
 
-    public Provider (String uuid, String company_uuid, String route_info_uuid, int price, Timestamp flight_start, Timestamp flight_end) {
+    public Provider (String uuid, String company_uuid, String route_info_uuid, Long price, Timestamp flight_start, Timestamp flight_end) {
         this.uuid = uuid;
         this.company_uuid = company_uuid;
         this.route_info_uuid = route_info_uuid;

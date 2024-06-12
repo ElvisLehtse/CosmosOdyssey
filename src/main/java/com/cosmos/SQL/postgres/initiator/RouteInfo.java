@@ -1,4 +1,4 @@
-package com.cosmos.SQL.postgres;
+package com.cosmos.SQL.postgres.initiator;
 
 public class RouteInfo {
 

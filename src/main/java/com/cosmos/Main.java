@@ -24,6 +24,7 @@ public class Main {
         APIReader routesManager = new APIReader();
         List<String> companyList = new ArrayList<>();
         companyList.add("27cb4c5c-04ba-4d41-ba16-013c504e0c2e");
+        /*
         companyList.add("c693f50a-f9e4-47b7-a221-c867873f18c5");
         companyList.add("f470e765-1691-4176-a859-1732217adb1d");
         companyList.add("f1f8b93e-e390-4e84-b4ce-aae5cd7036f3");
@@ -33,6 +34,8 @@ public class Main {
         companyList.add("f6c7fe92-ec36-40bb-afe7-52e39f8dc217");
         companyList.add("b2ab674c-5881-4751-97d0-ed37967c736c");
         companyList.add("7688b63e-0ff0-4cfd-9599-17f712da9ca4");
+
+         */
         try (Connection connection = postgresDatabaseConnector.connection()){
             JSONObject apiData = routesManager.getJsonDataFromAPI();
        //     SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(connection);
