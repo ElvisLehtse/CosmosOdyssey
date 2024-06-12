@@ -20,87 +20,107 @@ public class BestDealCalculator {
     static List<Provider> providerList = new ArrayList<>();
     static List<Company> companyList = new ArrayList<>();
 
-    public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companyList) throws SQLException{
+    public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companyListProvidedByUser) throws SQLException{
         List<String> currentPath = new ArrayList<>();
         List<String> routeUuid = new ArrayList<>();
-        List<List<String>> allRouteUuid = new ArrayList<>();
+        List<List<String>> allPossibleRoutes = new ArrayList<>();
+        findAllPossibleRoutes(originPlanet, destinationPlanet, routeUuid, currentPath, allPossibleRoutes, null);
 
-        findAllPossibleRoutes(originPlanet, destinationPlanet, routeUuid, currentPath, allRouteUuid, null);
-        List<List<Provider>> suitableProvidersByRoute = new ArrayList<>();
-        allRouteUuid = filterByCompany(companyList, allRouteUuid, suitableProvidersByRoute);
-        prettyPrintPaths(getPaths(originPlanet, allRouteUuid), originPlanet, destinationPlanet, getLowestPrice(suitableProvidersByRoute));
+        List<List<Provider>> suitableProvidersByRoute = filterByCompany(companyListProvidedByUser, allPossibleRoutes);
+        List<Long> routeDistance = routesDistance(allPossibleRoutes);
+        List<List<String>> allPaths = getPaths(originPlanet, allPossibleRoutes);
+
+        List<List<Provider>> suitableProvidersWithLowestCost = getLowestPrice(suitableProvidersByRoute);
+        List<Long> totalPrice = totalPrice(suitableProvidersWithLowestCost);
+        prettyPrintPaths(allPaths, originPlanet, destinationPlanet, suitableProvidersWithLowestCost, routeDistance, totalPrice);
     }
 
-    private void findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath, List<String> routeUuid, List<List<String>> allRouteUuid, String uuid) {
+    /**
+     * Finds all possible routes from origin planet to destination planet.
+     * Routes are stored as lists within a list, containing route_info UUID-s.
+     */
+    private void findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath, List<String> routeUuid, List<List<String>> allPossibleRoutes, String uuid) {
         currentPath.add(originPlanet);
         if (uuid != null) {
             routeUuid.add(uuid);
         }
         if (originPlanet.equals(destinationPlanet)) {
-            allRouteUuid.add(routeUuid);
+            allPossibleRoutes.add(routeUuid);
         }
         for (RouteInfo route : routeList) {
             if (route.getOriginPlanetUuid().equals(originPlanet)) {
                 uuid = route.getUuid();
                 String destination = route.getDestinationPlanetUuid();
                 if (!currentPath.contains(destination)) {
-                    findAllPossibleRoutes(destination, destinationPlanet, new ArrayList<>(currentPath), new ArrayList<>(routeUuid), allRouteUuid, uuid);
+                    findAllPossibleRoutes(destination, destinationPlanet, new ArrayList<>(currentPath), new ArrayList<>(routeUuid), allPossibleRoutes, uuid);
                 }
             }
         }
     }
 
-    private List<List<String>> filterByCompany(List<String> companyList, List<List<String>> allRouteUuid, List<List<Provider>> suitableProvidersByRoute) {
+    /**
+     * Filters all possible routes by companies provided by the end user.
+     * Filtered routes are returned along with provider information as a list within a list,
+     * containing provider uuid, company uuid, route info uuid, price, flight start and flight end information.
+     */
+    private List<List<Provider>> filterByCompany(List<String> companyListProvidedByUser, List<List<String>> allPossibleRoutes) {
+        List<List<Provider>> suitableProvidersByRoute = new ArrayList<>();
         List<Provider> suitableProviders = new ArrayList<>();
-        List<List<String>> suitableRoutesUuid = new ArrayList<>();
-        List<List<String>> newAllRoutesUuid = new ArrayList<>();
-        for (int i = 0; i < providerList.size(); i++) {
-            if (companyList.contains(providerList.get(i).getCompany_uuid())) {
-                suitableProviders.add(providerList.get(i));
+        for (Provider provider : providerList) {
+            if (companyListProvidedByUser.contains(provider.getCompany_uuid())) {
+                suitableProviders.add(provider);
             }
         }
-
-        for (int j = 0; j < allRouteUuid.size(); j++) {
+        for (List<String> allPossibleRoute : allPossibleRoutes) {
             List<Provider> tempListForSuitableProvidersByRoute = new ArrayList<>();
-            List<String> tempListForSuitableRoutesUuid = new ArrayList<>();
-            for (int k = 0; k < allRouteUuid.get(j).size(); k++) {
-                for (int i = 0; i < suitableProviders.size(); i++) {
-
-                    if (allRouteUuid.get(j).get(k).equals(suitableProviders.get(i).getRoute_info_uuid())) {
-                        if (!tempListForSuitableRoutesUuid.contains(suitableProviders.get(i).getRoute_info_uuid())) {
-                            tempListForSuitableRoutesUuid.add(suitableProviders.get(i).getRoute_info_uuid());
-                        }
-                        if (!tempListForSuitableProvidersByRoute.contains(suitableProviders.get(i))) {
-                            tempListForSuitableProvidersByRoute.add(suitableProviders.get(i));
+            for (String s : allPossibleRoute) {
+                for (Provider suitableProvider : suitableProviders) {
+                    if (s.equals(suitableProvider.getRoute_info_uuid())) {
+                        if (!tempListForSuitableProvidersByRoute.contains(suitableProvider)) {
+                            tempListForSuitableProvidersByRoute.add(suitableProvider);
                         }
                     }
                 }
             }
-            if (!tempListForSuitableProvidersByRoute.isEmpty() && !suitableProvidersByRoute.contains(tempListForSuitableProvidersByRoute)) {
-                suitableProvidersByRoute.add(tempListForSuitableProvidersByRoute);
-            }
-            if (!tempListForSuitableRoutesUuid.isEmpty() && !suitableRoutesUuid.contains(tempListForSuitableRoutesUuid)) {
-                suitableRoutesUuid.add(tempListForSuitableRoutesUuid);
-            }
+            suitableProvidersByRoute.add(tempListForSuitableProvidersByRoute);
         }
-
-        for (int i = 0; i < allRouteUuid.size(); i++) {
-            if (allRouteUuid.get(i).equals(suitableRoutesUuid.get(i))) {
-                newAllRoutesUuid.add(allRouteUuid.get(i));
-            }
-        }
-        return newAllRoutesUuid;
+        return suitableProvidersByRoute;
     }
 
-    private static List<List<String>> getPaths(String originPlanet, List<List<String>> allRouteUuid) {
+    /**
+     * Calculates the total distances for all possible routes.
+     * Route distances are returned as a list.
+     */
+    private static List<Long> routesDistance(List<List<String>> allPossibleRoutes) {
+        List<Long> routeDistance = new ArrayList<>();
+        for (List<String> allPossibleRoute : allPossibleRoutes) {
+            long tempList = 0L;
+            for (String s : allPossibleRoute) {
+                for (RouteInfo routeInfo : routeList) {
+                    if (s.equals(routeInfo.getUuid())) {
+                        tempList = tempList + routeInfo.getDistance();
+                    }
+                }
+            }
+            routeDistance.add(tempList);
+        }
+        return routeDistance;
+    }
+
+    /**
+     * Route UUID info in all possible routes is converted into to planet UUID information
+     * to refer to the destination planets.
+     */
+
+    private static List<List<String>> getPaths(String originPlanet, List<List<String>> allPossibleRoutes) {
         List<List<String>> allPaths = new ArrayList<>();
-        for (int i = 0; i < allRouteUuid.size(); i++) {
+        for (List<String> allPossibleRoute : allPossibleRoutes) {
             List<String> path = new ArrayList<>();
             path.add(originPlanet);
-            for (int j = 0; j < allRouteUuid.get(i).size(); j++) {
-                for (int k = 0; k < routeList.size(); k++) {
-                    if (allRouteUuid.get(i).get(j).equals(routeList.get(k).getUuid())) {
-                        path.add(routeList.get(k).getDestinationPlanetUuid());
+            for (String uuid : allPossibleRoute) {
+                for (RouteInfo routeInfo : routeList) {
+                    if (uuid.equals(routeInfo.getUuid())) {
+                        path.add(routeInfo.getDestinationPlanetUuid());
                     }
                 }
             }
@@ -109,54 +129,69 @@ public class BestDealCalculator {
         return allPaths;
     }
 
-
+    /**
+     * Takes in the suitable Provider list and filters out duplicate routes
+     * by cheapest price.
+     * Returns a list with suitable Providers information containing only the lowest
+     * price options.
+     */
     private List<List<Provider>> getLowestPrice(List<List<Provider>> suitableProvidersByRoute) {
-        List<List<Provider>> providerListWithSelectedCompanies = new ArrayList<>();
-        for (int i = 0; i < suitableProvidersByRoute.size(); i++) {
+        List<List<Provider>> suitableProvidersWithLowestCost = new ArrayList<>();
+        for (List<Provider> providers : suitableProvidersByRoute) {
             List<Provider> tempList = new ArrayList<>();
-            for (int j = 0; j < suitableProvidersByRoute.get(i).size(); j++) {
-                tempList.add(suitableProvidersByRoute.get(i).get(j));
+            for (Provider provider : providers) {
+                tempList.add(provider);
                 for (int k = 0; k < tempList.size(); k++) {
-                    if (tempList.get(k).getRoute_info_uuid().equals(suitableProvidersByRoute.get(i).get(j).getRoute_info_uuid())) {
-                        if (tempList.get(k).getPrice() > suitableProvidersByRoute.get(i).get(j).getPrice()) {
+                    if (tempList.get(k).getRoute_info_uuid().equals(provider.getRoute_info_uuid())) {
+                        if (tempList.get(k).getPrice() > provider.getPrice()) {
                             tempList.remove(k);
-                        } else if (tempList.get(k).getPrice() < suitableProvidersByRoute.get(i).get(j).getPrice()) {
+                        } else if (tempList.get(k).getPrice() < provider.getPrice()) {
                             tempList.removeLast();
                         }
                     }
                 }
             }
-            providerListWithSelectedCompanies.add(tempList);
+            suitableProvidersWithLowestCost.add(tempList);
         }
-        return providerListWithSelectedCompanies;
+        return suitableProvidersWithLowestCost;
     }
 
-    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet, String destinationPlanet, List<List<Provider>> providerListWithSelectedCompanies) {
+    /**
+     * Calculates the total price of all the routes and returns them as a list.
+     */
 
+    private List<Long> totalPrice(List<List<Provider>> suitableProvidersWithLowestCost) {
         List<Long> totalPrice = new ArrayList<>();
-        for (int i = 0; i < providerListWithSelectedCompanies.size(); i++) {
+        for (List<Provider> providers : suitableProvidersWithLowestCost) {
             long tempPrice = 0;
-            for (int j = 0; j < providerListWithSelectedCompanies.get(i).size(); j++) {
-                tempPrice = tempPrice + providerListWithSelectedCompanies.get(i).get(j).getPrice();
+            for (Provider provider : providers) {
+                tempPrice = tempPrice + provider.getPrice();
             }
             totalPrice.add(tempPrice);
         }
+        return totalPrice;
+    }
+
+    /**
+     * Prints out
+     */
+    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet, String destinationPlanet, List<List<Provider>> suitableProvidersWithLowestCost, List<Long> routeDistance, List<Long> totalPrice) {
 
         List<String> prettyPrint = new ArrayList<>();
         for (int i = 0; i < allPaths.size(); i++) {
             List<String> allPath = allPaths.get(i);
             List<String> tempList = new ArrayList<>();
-            for (int j = 0; j < allPath.size(); j++) {
-                String path = allPath.get(j);
-                for (int k = 0; k < planetList.size(); k++) {
-                    Planet planet = planetList.get(k);
+            for (String path : allPath) {
+                for (Planet planet : planetList) {
                     if (planet.getUuid().equals(path)) {
                         tempList.add(planet.getName());
                         break;
                     }
                 }
             }
-            prettyPrint.add(String.join(" | total lowest cost: ", String.join(" -> ", tempList), String.join("", String.valueOf(totalPrice.get(i)))));
+            prettyPrint.add(String.join(" | ", String.join(" -> ", tempList),
+                    String.join("", STR."total lowest cost: \{String.valueOf(totalPrice.get(i))}"),
+                    String.join("", STR."total distance: \{String.valueOf(routeDistance.get(i))}")));
         }
 
         String origin = "";
@@ -175,10 +210,10 @@ public class BestDealCalculator {
         }
 
         List<String> selectedCompanies = new ArrayList<>();
-        for (int i = 0; i < providerListWithSelectedCompanies.size(); i++) {
-            for (int j = 0; j < providerListWithSelectedCompanies.get(i).size(); j++) {
-                if (!selectedCompanies.contains(providerListWithSelectedCompanies.get(i).get(j).getCompany_uuid())) {
-                    selectedCompanies.add(providerListWithSelectedCompanies.get(i).get(j).getCompany_uuid());
+        for (List<Provider> providers : suitableProvidersWithLowestCost) {
+            for (Provider provider : providers) {
+                if (!selectedCompanies.contains(provider.getCompany_uuid())) {
+                    selectedCompanies.add(provider.getCompany_uuid());
                 }
             }
         }
@@ -189,8 +224,8 @@ public class BestDealCalculator {
         }
 
         System.out.println("When traveling with companies: ");
-        for (int i = 0; i < selectedCompanies.size(); i++) {
-            System.out.println(selectedCompanies.get(i));
+        for (String selectedCompany : selectedCompanies) {
+            System.out.println(selectedCompany);
         }
     }
 }
