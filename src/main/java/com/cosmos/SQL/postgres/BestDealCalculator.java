@@ -39,7 +39,9 @@ public class BestDealCalculator {
      * Finds all possible routes from origin planet to destination planet.
      * Routes are stored as lists within a list, containing route_info UUID-s.
      */
-    private void findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath, List<String> routeUuid, List<List<String>> allPossibleRoutes, String uuid) {
+
+    private void findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath,
+                                       List<String> routeUuid, List<List<String>> allPossibleRoutes, String uuid) {
         currentPath.add(originPlanet);
         if (uuid != null) {
             routeUuid.add(uuid);
@@ -52,7 +54,8 @@ public class BestDealCalculator {
                 uuid = route.getUuid();
                 String destination = route.getDestinationPlanetUuid();
                 if (!currentPath.contains(destination)) {
-                    findAllPossibleRoutes(destination, destinationPlanet, new ArrayList<>(currentPath), new ArrayList<>(routeUuid), allPossibleRoutes, uuid);
+                    findAllPossibleRoutes(destination, destinationPlanet, new ArrayList<>(currentPath),
+                            new ArrayList<>(routeUuid), allPossibleRoutes, uuid);
                 }
             }
         }
@@ -63,6 +66,7 @@ public class BestDealCalculator {
      * Filtered routes are returned along with provider information as a list within a list,
      * containing provider uuid, company uuid, route info uuid, price, flight start and flight end information.
      */
+
     private List<List<Provider>> filterByCompany(List<String> companyListProvidedByUser, List<List<String>> allPossibleRoutes) {
         List<List<Provider>> suitableProvidersByRoute = new ArrayList<>();
         List<Provider> suitableProviders = new ArrayList<>();
@@ -91,6 +95,7 @@ public class BestDealCalculator {
      * Calculates the total distances for all possible routes.
      * Route distances are returned as a list.
      */
+
     private static List<Long> routesDistance(List<List<String>> allPossibleRoutes) {
         List<Long> routeDistance = new ArrayList<>();
         for (List<String> allPossibleRoute : allPossibleRoutes) {
@@ -135,6 +140,7 @@ public class BestDealCalculator {
      * Returns a list with suitable Providers information containing only the lowest
      * price options.
      */
+
     private List<List<Provider>> getLowestPrice(List<List<Provider>> suitableProvidersByRoute) {
         List<List<Provider>> suitableProvidersWithLowestCost = new ArrayList<>();
         for (List<Provider> providers : suitableProvidersByRoute) {
@@ -175,7 +181,9 @@ public class BestDealCalculator {
     /**
      * Prints out
      */
-    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet, String destinationPlanet, List<List<Provider>> suitableProvidersWithLowestCost, List<Long> routeDistance, List<Long> totalPrice) {
+    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet,
+                                  String destinationPlanet, List<List<Provider>> suitableProvidersWithLowestCost,
+                                  List<Long> routeDistance, List<Long> totalPrice) {
 
         List<String> prettyPrint = new ArrayList<>();
         for (int i = 0; i < allPaths.size(); i++) {
@@ -199,13 +207,8 @@ public class BestDealCalculator {
         for (Planet planet : planetList) {
             if (planet.getUuid().equals(originPlanet)) {
                 origin = planet.getName();
-                break;
-            }
-        }
-        for (Planet planet : planetList) {
-            if (planet.getUuid().equals(destinationPlanet)) {
+            } else if (planet.getUuid().equals(destinationPlanet)) {
                 destination = planet.getName();
-                break;
             }
         }
 
@@ -225,7 +228,11 @@ public class BestDealCalculator {
 
         System.out.println("When traveling with companies: ");
         for (String selectedCompany : selectedCompanies) {
-            System.out.println(selectedCompany);
+            for (Company company : companyList) {
+                if (selectedCompany.equals(company.getUuid())) {
+                    System.out.println(company.getName());
+                }
+            }
         }
     }
 }
