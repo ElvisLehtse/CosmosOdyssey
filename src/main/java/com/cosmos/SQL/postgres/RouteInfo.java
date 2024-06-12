@@ -4,8 +4,8 @@ public class RouteInfo {
 
     private final String uuid;
     private final String priceListUuid;
-    private final String fromPlanetUuid;
-    private final String toPlanetUuid;
+    private final String from_planet_uuid;
+    private final String to_planet_uuid;
     private final Long distance;
 
     public String getUuid() {
@@ -16,12 +16,12 @@ public class RouteInfo {
         return priceListUuid;
     }
 
-    public String getFromPlanetUuid() {
-        return fromPlanetUuid;
+    public String getOriginPlanetUuid() {
+        return from_planet_uuid;
     }
 
-    public String getToPlanetUuid() {
-        return toPlanetUuid;
+    public String getDestinationPlanetUuid() {
+        return to_planet_uuid;
     }
 
     public Long getDistance() {
@@ -31,8 +31,8 @@ public class RouteInfo {
     public RouteInfo (String uuid, String priceListUuid, String fromPlanetUuid, String toPlanetUuid, Long distance) {
         this.uuid = uuid;
         this.priceListUuid = priceListUuid;
-        this.fromPlanetUuid = fromPlanetUuid;
-        this.toPlanetUuid = toPlanetUuid;
+        this.from_planet_uuid = fromPlanetUuid;
+        this.to_planet_uuid = toPlanetUuid;
         this.distance = distance;
     }
 }
