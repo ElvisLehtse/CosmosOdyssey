@@ -123,7 +123,7 @@ public class PostgresDatabaseConnector {
                 SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(newConnection);
                 sqlDatabaseTableCreator.createAllTables(apiData);
 
-                InitiateCalculator initiateCalculator = new InitiateCalculator(connection);
+                InitiateCalculator initiateCalculator = new InitiateCalculator(newConnection);
                 initiateCalculator.runCalculator();
             } catch (SQLException | IOException e) {
                 System.out.println(e.getMessage());
