@@ -2,8 +2,7 @@ package com.cosmos.SQL.postgres;
 
 import com.cosmos.SQL.postgres.initiator.*;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 public class BestDealCalculator {
@@ -14,11 +13,13 @@ public class BestDealCalculator {
         planetList = initiateLists.getPlanetList();
         providerList = initiateLists.getProviderList();
         companyList = initiateLists.getCompanyList();
+        this.connection = connection;
     }
     static List<RouteInfo> routeList = new ArrayList<>();
     static List<Planet> planetList = new ArrayList<>();
     static List<Provider> providerList = new ArrayList<>();
     static List<Company> companyList = new ArrayList<>();
+    private final Connection connection;
 
     public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companyListProvidedByUser) throws SQLException{
         List<String> currentPath = new ArrayList<>();
@@ -196,7 +197,7 @@ public class BestDealCalculator {
                     }
                 }
             }
-            prettyPrint.add(String.join(" | ", String.join(" -> ", tempList),
+            prettyPrint.add(String.join(" | ", String.join("", STR."Route nr: \{i + 1}"), String.join(" -> ", tempList),
                     String.join("", STR."total lowest cost: \{String.valueOf(totalPrice.get(i))}"),
                     String.join("", STR."total distance: \{String.valueOf(routeDistance.get(i))}")));
         }
@@ -230,6 +231,53 @@ public class BestDealCalculator {
             for (Company company : companyList) {
                 if (selectedCompany.equals(company.getUuid())) {
                     System.out.println(company.getName());
+                }
+            }
+        }
+        storeUserChoice(suitableProvidersWithLowestCost);
+    }
+
+    private void storeUserChoice(List<List<Provider>> suitableProvidersWithLowestCost) {
+        System.out.println("Would you like to select a travel option?");
+        System.out.println("Y / N");
+        Scanner scanner = new Scanner(System.in);
+        String userChoice = scanner.next().toUpperCase();
+
+        if (userChoice.equals("Y")) {
+            System.out.println("Please choose an available route");
+            int userRouteChoice = scanner.nextInt();
+            System.out.println("Please enter you first name");
+            String userFirstName = scanner.next();
+            System.out.println("Please enter you last name");
+            String userLastName = scanner.next();
+
+            String reservation = "INSERT INTO reservation(" +
+                    "uuid, first_name, last_name)" +
+                    "VALUES (?, ?, ?)";
+            UUID reservationUuid = UUID.randomUUID();
+            try {
+                PreparedStatement preparedStatement = connection.prepareStatement(reservation);
+                preparedStatement.setObject(1, reservationUuid);
+                preparedStatement.setString(2, userFirstName);
+                preparedStatement.setString(3, userLastName);
+                preparedStatement.execute();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+
+            String reservedRoutes = "INSERT INTO reserved_routes(" +
+                    "uuid, reservation_uuid, provider_uuid)" +
+                    "VALUES (?, ?, ?)";
+            for (int i = 0; i < suitableProvidersWithLowestCost.get(userRouteChoice - 1).size(); i++) {
+                try {
+                    UUID reservedRoutesUuid = UUID.randomUUID();
+                    PreparedStatement preparedStatement = connection.prepareStatement(reservedRoutes);
+                    preparedStatement.setObject(1, reservedRoutesUuid);
+                    preparedStatement.setObject(2, reservationUuid);
+                    preparedStatement.setObject(3, UUID.fromString(suitableProvidersWithLowestCost.get(userRouteChoice - 1).get(i).getUuid()));
+                    preparedStatement.execute();
+                } catch (SQLException e) {
+                    System.out.println(e.getMessage());
                 }
             }
         }

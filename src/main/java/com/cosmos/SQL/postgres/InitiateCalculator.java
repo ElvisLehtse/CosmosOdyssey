@@ -15,9 +15,11 @@ public class InitiateCalculator {
         InitiateLists initiateLists = new InitiateLists(connection);
         companyList = initiateLists.getCompanyList();
         planetList = initiateLists.getPlanetList();
+        this.connection = connection;
     }
     static List<Company> companyList = new ArrayList<>();
     static List<Planet> planetList = new ArrayList<>();
+    private final Connection connection;
 
     private List<String> companySetup() {
         List<String> userDefinedCompanyNames = new ArrayList<>();
@@ -51,10 +53,10 @@ public class InitiateCalculator {
     }
 
     public void runCalculator() {
-        PostgresDatabaseConnector postgresDatabaseConnector = new PostgresDatabaseConnector();
+
         List<String> listOfDefinedCompanyUuid = companySetup();
         List<String> listOfDefinedPlanetUuid = planetSetup();
-        try (Connection connection = postgresDatabaseConnector.connection()){
+        try (connection){
             BestDealCalculator bestDealCalculator = new BestDealCalculator(connection);
             bestDealCalculator.generateSolutions(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), listOfDefinedCompanyUuid);
         } catch (SQLException e) {

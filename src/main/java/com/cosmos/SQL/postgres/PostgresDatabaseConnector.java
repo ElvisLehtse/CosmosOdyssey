@@ -73,7 +73,8 @@ public class PostgresDatabaseConnector {
             String databaseTime = resultSet.getString(1);
             String currentTime = (new Timestamp(System.currentTimeMillis())).toString();
             int isDatabaseValid = databaseTime.compareTo(currentTime);
-            if (isDatabaseValid > 0) {
+            //if (isDatabaseValid > 0) { // CORRECT SOLUTION! Temporarily changed
+            if (isDatabaseValid < 0) {
                 InitiateCalculator initiateCalculator = new InitiateCalculator(connection);
                 initiateCalculator.runCalculator();
             } else {
@@ -92,7 +93,8 @@ public class PostgresDatabaseConnector {
         String apiValidUntilFormatted = apiValidUntil.replace("T", " ").replace("Z", "");
         String currentTime = (new Timestamp(System.currentTimeMillis())).toString();
         int isApiValid = apiValidUntilFormatted.compareTo(currentTime);
-        if (isApiValid > 0) {
+       // if (isApiValid > 0) { // CORRECT SOLUTION! Temporarily changed
+        if (isApiValid < 0) {
             createNewDatabase(databaseIndex);
         } else {
             // Do something here

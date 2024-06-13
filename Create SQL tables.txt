@@ -39,13 +39,13 @@ CREATE TABLE provider (
 );
 
 CREATE TABLE reservation (
-  id         SERIAL PRIMARY KEY,
+  uuid       UUID PRIMARY KEY,
   first_name VARCHAR(32) NOT NULL,
   last_name  VARCHAR(32) NOT NULL
 );
 
 CREATE TABLE reserved_routes (
-  id               SERIAL PRIMARY KEY,
-  reservation_uuid SERIAL REFERENCES reservation (id) NOT NULL,
+  uuid             UUID PRIMARY KEY,
+  reservation_uuid UUID REFERENCES reservation (uuid) NOT NULL,
   provider_uuid    UUID REFERENCES provider (uuid)    NOT NULL
 );
