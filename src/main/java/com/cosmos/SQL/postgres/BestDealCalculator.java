@@ -23,13 +23,10 @@ public class BestDealCalculator {
     public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companyListProvidedByUser) throws SQLException{
         List<String> currentPath = new ArrayList<>();
         List<String> routeUuid = new ArrayList<>();
-        List<List<String>> allPossibleRoutes = new ArrayList<>();
-        findAllPossibleRoutes(originPlanet, destinationPlanet, routeUuid, currentPath, allPossibleRoutes, null);
-
+        List<List<String>> allPossibleRoutes = findAllPossibleRoutes(originPlanet, destinationPlanet, routeUuid, currentPath, new ArrayList<>(), null);
         List<List<Provider>> suitableProvidersByRoute = filterByCompany(companyListProvidedByUser, allPossibleRoutes);
         List<Long> routeDistance = routesDistance(allPossibleRoutes);
         List<List<String>> allPaths = getPaths(originPlanet, allPossibleRoutes);
-
         List<List<Provider>> suitableProvidersWithLowestCost = getLowestPrice(suitableProvidersByRoute);
         List<Long> totalPrice = totalPrice(suitableProvidersWithLowestCost);
         prettyPrintPaths(allPaths, originPlanet, destinationPlanet, suitableProvidersWithLowestCost, routeDistance, totalPrice);
@@ -37,10 +34,10 @@ public class BestDealCalculator {
 
     /**
      * Finds all possible routes from origin planet to destination planet.
-     * Routes are stored as lists within a list, containing route_info UUID-s.
+     * Routes are returned as lists within a list, containing route_info UUID-s.
      */
 
-    private void findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath,
+    private List<List<String>> findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath,
                                        List<String> routeUuid, List<List<String>> allPossibleRoutes, String uuid) {
         currentPath.add(originPlanet);
         if (uuid != null) {
@@ -59,6 +56,7 @@ public class BestDealCalculator {
                 }
             }
         }
+        return allPossibleRoutes;
     }
 
     /**
@@ -179,7 +177,8 @@ public class BestDealCalculator {
     }
 
     /**
-     * Prints out
+     * Prints out all routes filtered by companies, providing the best prices and travel distances
+     * along with company names being used.
      */
     private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet,
                                   String destinationPlanet, List<List<Provider>> suitableProvidersWithLowestCost,

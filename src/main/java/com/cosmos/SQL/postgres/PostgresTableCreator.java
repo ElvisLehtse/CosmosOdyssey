@@ -16,7 +16,6 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
 
     public PostgresTableCreator (Connection connection) {
         this.connection = connection;
-
     }
 
     public void createAllTables(JSONObject apiData) throws SQLException {

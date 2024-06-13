@@ -12,7 +12,7 @@ CREATE TABLE price_list (
 );
 
 CREATE TABLE planet (
-  uuid UUID PRIMARY KEY, -- currently cannot be taken from raw data as it's not the same there, json data incorrect?!?! Generate yourself (ver 4 UUID)
+  uuid UUID PRIMARY KEY,
   name VARCHAR(32) UNIQUE NOT NULL
 );
 

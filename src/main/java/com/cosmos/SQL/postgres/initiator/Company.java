@@ -2,8 +2,8 @@ package com.cosmos.SQL.postgres.initiator;
 
 public class Company {
 
-    String uuid;
-    String name;
+    private final String uuid;
+    private final String name;
 
     public String getUuid() {
         return uuid;

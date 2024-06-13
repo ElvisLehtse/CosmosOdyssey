@@ -18,10 +18,10 @@ public class InitiateLists {
         initiateCompany();
     }
 
-    private final List<RouteInfo> routeList = new ArrayList<>();
-    private final List<Planet> planetList = new ArrayList<>();
-    private final List<Provider> providerList = new ArrayList<>();
-    private final List<Company> companyList = new ArrayList<>();
+    private List<RouteInfo> routeList = new ArrayList<>();
+    private List<Planet> planetList = new ArrayList<>();
+    private List<Provider> providerList = new ArrayList<>();
+    private List<Company> companyList = new ArrayList<>();
 
     public List<RouteInfo> getRouteList() {
         return routeList;
@@ -40,6 +40,7 @@ public class InitiateLists {
     }
 
     private void initiatePlanets() throws SQLException {
+        planetList = new ArrayList<>();
         String sql= "SELECT * FROM planet;";
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
@@ -50,6 +51,7 @@ public class InitiateLists {
     }
 
     private void initiateRoutes() throws SQLException {
+        routeList = new ArrayList<>();
         String sql= "SELECT * FROM route_info;";
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
@@ -61,6 +63,7 @@ public class InitiateLists {
     }
 
     private void initiateProviders() throws SQLException {
+        providerList = new ArrayList<>();
         String sql= "SELECT * FROM provider;";
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
@@ -72,6 +75,7 @@ public class InitiateLists {
     }
 
     private void initiateCompany() throws SQLException {
+        companyList = new ArrayList<>();
         String sql= "SELECT * FROM company;";
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
