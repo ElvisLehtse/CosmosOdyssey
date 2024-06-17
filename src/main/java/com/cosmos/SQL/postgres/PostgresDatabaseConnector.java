@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.*;
+import java.util.List;
 import java.util.Scanner;
 
 public class PostgresDatabaseConnector {
@@ -17,6 +18,9 @@ public class PostgresDatabaseConnector {
     private String database;
     private String username;
     private String password;
+    private List<String> userDefinedCompanyNames;
+    private String originPlanet;
+    private String destinationPlanet;
 
     public Connection connection() throws SQLException {
         return DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + database, username, password);
@@ -35,7 +39,10 @@ public class PostgresDatabaseConnector {
         }
     }
 
-    public void checkIfDatabaseExists() throws IOException {
+    public void checkIfDatabaseExists(List<String> userDefinedCompanyNames, String originPlanet, String destinationPlanet) throws IOException {
+        this.userDefinedCompanyNames = userDefinedCompanyNames;
+        this.originPlanet = originPlanet;
+        this.destinationPlanet = destinationPlanet;
         boolean doesDatabaseExist = true;
         int databaseIndex = 0;
         while (doesDatabaseExist) {
@@ -76,7 +83,7 @@ public class PostgresDatabaseConnector {
             //if (isDatabaseValid > 0) { // CORRECT SOLUTION! Temporarily changed
             if (isDatabaseValid < 0) {
                 InitiateCalculator initiateCalculator = new InitiateCalculator(connection);
-                initiateCalculator.runCalculator();
+                initiateCalculator.runCalculator(userDefinedCompanyNames, originPlanet, destinationPlanet);
             } else {
                 databaseIndex++;
                 checkIfApiHasValidDate(databaseIndex);
@@ -97,7 +104,7 @@ public class PostgresDatabaseConnector {
         if (isApiValid < 0) {
             createNewDatabase(databaseIndex);
         } else {
-            // Do something here
+            // Do something here SERVER response:
             System.out.println("There are currently no available price lists");
         }
     }
@@ -124,7 +131,7 @@ public class PostgresDatabaseConnector {
                 sqlDatabaseTableCreator.createAllTables(apiData);
 
                 InitiateCalculator initiateCalculator = new InitiateCalculator(newConnection);
-                initiateCalculator.runCalculator();
+                initiateCalculator.runCalculator(userDefinedCompanyNames, originPlanet, destinationPlanet);
             } catch (SQLException | IOException e) {
                 System.out.println(e.getMessage());
             }

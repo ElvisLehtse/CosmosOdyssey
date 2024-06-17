@@ -21,11 +21,7 @@ public class InitiateCalculator {
     static List<Planet> planetList = new ArrayList<>();
     private final Connection connection;
 
-    private List<String> companySetup() {
-        List<String> userDefinedCompanyNames = new ArrayList<>();
-        userDefinedCompanyNames.add("SpaceX");
-        userDefinedCompanyNames.add("Spacelux");
-        userDefinedCompanyNames.add("Space Piper");
+    private List<String> companySetup(List<String> userDefinedCompanyNames) {
         List<String> listOfDefinedCompanyUuid = new ArrayList<>();
         for (String selectedCompanies : userDefinedCompanyNames) {
             for (Company company : companyList) {
@@ -37,10 +33,10 @@ public class InitiateCalculator {
         return listOfDefinedCompanyUuid;
     }
 
-    private List<String> planetSetup() {
+    private List<String> planetSetup(String originPlanet, String destinationPlanet) {
         List<String> userDefinedPlanetNames = new ArrayList<>();
-        userDefinedPlanetNames.add("Earth");
-        userDefinedPlanetNames.add("Neptune");
+        userDefinedPlanetNames.add(originPlanet);
+        userDefinedPlanetNames.add(destinationPlanet);
         List<String> listOfDefinedPlanetUuid = new ArrayList<>();
         for (String selectedPlanets : userDefinedPlanetNames) {
             for (Planet planet : planetList) {
@@ -52,10 +48,9 @@ public class InitiateCalculator {
         return listOfDefinedPlanetUuid;
     }
 
-    public void runCalculator() {
-
-        List<String> listOfDefinedCompanyUuid = companySetup();
-        List<String> listOfDefinedPlanetUuid = planetSetup();
+    public void runCalculator(List<String> userDefinedCompanyNames, String originPlanet, String destinationPlanet) {
+        List<String> listOfDefinedCompanyUuid = companySetup(userDefinedCompanyNames);
+        List<String> listOfDefinedPlanetUuid = planetSetup(originPlanet, destinationPlanet);
         try (connection){
             BestDealCalculator bestDealCalculator = new BestDealCalculator(connection);
             bestDealCalculator.generateSolutions(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), listOfDefinedCompanyUuid);

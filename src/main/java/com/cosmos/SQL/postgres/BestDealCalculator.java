@@ -1,6 +1,7 @@
 package com.cosmos.SQL.postgres;
 
 import com.cosmos.SQL.postgres.initiator.*;
+import com.cosmos.server.RequestHandler;
 
 import java.sql.*;
 import java.util.*;
@@ -221,20 +222,27 @@ public class BestDealCalculator {
             }
         }
 
-        System.out.println(STR."All possible routes from \{origin} to \{destination}:");
-        for (String path : prettyPrint) {
-            System.out.println(path);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < prettyPrint.size(); i++) {
+            stringBuilder.append("<br>");
+            stringBuilder.append(prettyPrint.get(i));
+            stringBuilder.append("</br>");
         }
+        RequestHandler.setPath(stringBuilder.toString());
 
-        System.out.println("When traveling with companies: ");
+        stringBuilder = new StringBuilder();
         for (String selectedCompany : selectedCompanies) {
             for (Company company : companyList) {
                 if (selectedCompany.equals(company.getUuid())) {
-                    System.out.println(company.getName());
+                    stringBuilder.append(company.getName());
+                    stringBuilder.append("<br>");
                 }
             }
         }
-        storeUserChoice(suitableProvidersWithLowestCost);
+        RequestHandler.setCompanies(stringBuilder.toString());
+
+
+        //storeUserChoice(suitableProvidersWithLowestCost);
     }
 
     private void storeUserChoice(List<List<Provider>> suitableProvidersWithLowestCost) {
