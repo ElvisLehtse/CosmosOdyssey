@@ -8,24 +8,22 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.*;
-import java.util.List;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Scanner;
 
 public class PostgresDatabaseConnector {
 
-    private String host;
-    private String port;
-    private String database;
-    private String username;
-    private String password;
-    private List<String> userDefinedCompanyNames;
-    private String originPlanet;
-    private String destinationPlanet;
+    private static String host;
+    private static String port;
+    private static String database;
+    private static String username;
+    private static String password;
 
-    public Connection connection() throws SQLException {
+    public static Connection connection() throws SQLException {
         return DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + database, username, password);
     }
-    private void settings(int databaseIndex) {
+    private static void settings(int databaseIndex) {
         File file = new File("Postgres credentials.txt");
         try {
             Scanner scanner = new Scanner(file);
@@ -39,22 +37,23 @@ public class PostgresDatabaseConnector {
         }
     }
 
-    public void checkIfDatabaseExists(List<String> userDefinedCompanyNames, String originPlanet, String destinationPlanet) throws IOException {
-        this.userDefinedCompanyNames = userDefinedCompanyNames;
-        this.originPlanet = originPlanet;
-        this.destinationPlanet = destinationPlanet;
+    private static String getDatabaseResponse(String sql, Connection connection) throws SQLException {
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql);
+        resultSet.next();
+        return resultSet.getString(1);
+    }
+
+    public static void checkIfDatabaseExists() throws IOException {
         boolean doesDatabaseExist = true;
         int databaseIndex = 0;
         while (doesDatabaseExist) {
             databaseIndex++;
-            String checkIfDatabaseExistsSQL =
+            String sql =
                     STR."SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE datname = 'cosmosodyssey\{databaseIndex}');";
             settings(databaseIndex);
             try (Connection connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/", username, password)) {
-                Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery(checkIfDatabaseExistsSQL);
-                resultSet.next();
-                String databaseStatus = resultSet.getString(1);
+                String databaseStatus = getDatabaseResponse(sql, connection);
                 if (databaseStatus.equals("f")) {
                     doesDatabaseExist = false;
                     if (databaseIndex == 1) {
@@ -70,21 +69,16 @@ public class PostgresDatabaseConnector {
         }
     }
 
-    private void checkDatabaseDate(int databaseIndex) throws IOException {
-        String checkDatabaseValidUntil = "SELECT valid_until FROM price_list;";
+    private static void checkDatabaseDate(int databaseIndex) throws IOException {
+        String sql = "SELECT valid_until FROM price_list;";
         settings(databaseIndex);
         try (Connection connection = connection()) {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(checkDatabaseValidUntil);
-            resultSet.next();
-            String databaseTime = resultSet.getString(1);
-            String currentTime = (new Timestamp(System.currentTimeMillis())).toString();
+            String databaseTime = getDatabaseResponse(sql, connection);
+            ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("GMT"));
+            String currentTime = Timestamp.valueOf(zonedDateTime.toLocalDateTime()).toString();
             int isDatabaseValid = databaseTime.compareTo(currentTime);
-            //if (isDatabaseValid > 0) { // CORRECT SOLUTION! Temporarily changed
+            System.out.println(isDatabaseValid);
             if (isDatabaseValid < 0) {
-                InitiateCalculator initiateCalculator = new InitiateCalculator(connection);
-                initiateCalculator.runCalculator(userDefinedCompanyNames, originPlanet, destinationPlanet);
-            } else {
                 databaseIndex++;
                 checkIfApiHasValidDate(databaseIndex);
             }
@@ -93,15 +87,16 @@ public class PostgresDatabaseConnector {
         }
     }
 
-    private void checkIfApiHasValidDate(int databaseIndex) throws IOException {
+    private static void checkIfApiHasValidDate(int databaseIndex) throws IOException {
         APIReader apiReader = new APIReader();
         JSONObject apiData = apiReader.getJsonDataFromAPI();
         String apiValidUntil = apiData.getString("validUntil");
         String apiValidUntilFormatted = apiValidUntil.replace("T", " ").replace("Z", "");
-        String currentTime = (new Timestamp(System.currentTimeMillis())).toString();
+        ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("GMT"));
+        String currentTime = Timestamp.valueOf(zonedDateTime.toLocalDateTime()).toString();
         int isApiValid = apiValidUntilFormatted.compareTo(currentTime);
-       // if (isApiValid > 0) { // CORRECT SOLUTION! Temporarily changed
-        if (isApiValid < 0) {
+        System.out.println(isApiValid);
+        if (isApiValid > 0) {
             createNewDatabase(databaseIndex);
         } else {
             // Do something here SERVER response:
@@ -109,7 +104,7 @@ public class PostgresDatabaseConnector {
         }
     }
 
-    private void createNewDatabase(int databaseIndex) {
+    private static void createNewDatabase(int databaseIndex) {
         String createNewDatabase = STR."CREATE DATABASE CosmosOdyssey\{databaseIndex}";
         settings(databaseIndex);
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/", username, password)) {
@@ -129,9 +124,6 @@ public class PostgresDatabaseConnector {
                 JSONObject apiData = apiReader.getJsonDataFromAPI();
                 SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(newConnection);
                 sqlDatabaseTableCreator.createAllTables(apiData);
-
-                InitiateCalculator initiateCalculator = new InitiateCalculator(newConnection);
-                initiateCalculator.runCalculator(userDefinedCompanyNames, originPlanet, destinationPlanet);
             } catch (SQLException | IOException e) {
                 System.out.println(e.getMessage());
             }

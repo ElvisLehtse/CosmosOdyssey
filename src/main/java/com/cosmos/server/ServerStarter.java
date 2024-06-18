@@ -12,9 +12,7 @@ public class ServerStarter {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             RequestHandler requestHandler = new RequestHandler();
-
             requestHandler.requestGetAndPost(server, "/");
-
             server.start();
         } catch (IOException e) {
             System.out.println(STR."\{e.getMessage()} Could not create the server");

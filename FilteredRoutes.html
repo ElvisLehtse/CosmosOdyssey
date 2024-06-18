@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http equiv="X-UA-Compatible" content="IE-edge">
+        <meta name="viewpoint" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="src/scc/main.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@3.0.1/dist/css/multi-select-tag.css">
+        <title>Cosmos Odyssey</title>
+    </head>
+    <body>
+        <span>All possible routes from $originPlanet to $destinationPlanet</span><br>
+        <span>$path</span><br>
+        <span>When traveling with companies:</span><br>
+        <span>$companies</span><br>
+        <form actions="" method="post">
+            <div>
+                <label for="companyname">Filter by company name</label>
+                <select name="companies" id="companies" multiple>
+                    <option value="Space Voyager"> Space Voyager</option>
+                    <option value="Travel Nova"> Travel Nova</option>
+                    <option value="Explore Dynamite"> Explore Dynamite</option>
+                    <option value="SpaceX"> SpaceX</option>
+                    <option value="Spacelux"> Spacelux</option>
+                    <option value="Space Piper"> Space Piper</option>
+                    <option value="Space Odyssey"> Space Odyssey</option>
+                    <option value="Galaxy Express"> Galaxy Express</option>
+                    <option value="Explore Origin"> Explore Origin</option>
+                    <option value="Spacegenix"> Spacegenix</option>
+                </select>                
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+        <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@3.0.1/dist/js/multi-select-tag.js"></script>
+        <script>
+            new MultiSelectTag('companies')
+        </script>
+    </body>
+</html>

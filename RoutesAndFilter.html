@@ -9,9 +9,12 @@
         <title>Cosmos Odyssey</title>
     </head>
     <body>
+        <span>All possible routes from $originPlanet to $destinationPlanet</span><br>
+        <span>$path</span><br>
+    
         <form actions="" method="post">
             <div>
-                <label for="city">Companies</label>
+                <label for="companyname">Filter by company name</label>
                 <select name="companies" id="companies" multiple>
                     <option value="Space Voyager"> Space Voyager</option>
                     <option value="Travel Nova"> Travel Nova</option>
@@ -23,32 +26,9 @@
                     <option value="Galaxy Express"> Galaxy Express</option>
                     <option value="Explore Origin"> Explore Origin</option>
                     <option value="Spacegenix"> Spacegenix</option>
-                </select>
-                <label for="city">Travel from</label>
-                <select name="originplanet" id="originplanet">
-                    <option value="Mercury"> Mercury</option>
-                    <option value="Venus"> Venus</option>
-                    <option value="Earth"> Earth</option>
-                    <option value="Mars"> Mars</option>
-                    <option value="Jupiter"> Jupiter</option>
-                    <option value="Saturn"> Saturn</option>
-                    <option value="Uranus"> Uranus</option>
-                    <option value="Neptune"> Neptune</option>
-                </select>
-                <label for="city">Travel to</label>
-                <select name="destinationplanet" id="destinationplanet">
-                    <option value="Mercury"> Mercury</option>
-                    <option value="Venus"> Venus</option>
-                    <option value="Earth"> Earth</option>
-                    <option value="Mars"> Mars</option>
-                    <option value="Jupiter"> Jupiter</option>
-                    <option value="Saturn"> Saturn</option>
-                    <option value="Uranus"> Uranus</option>
-                    <option value="Neptune"> Neptune</option>
-                </select>
-                
+                </select>                
             </div>
-            <button type ="submit">Submit</button>
+            <button type="submit">Submit</button>
         </form>
         <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@3.0.1/dist/js/multi-select-tag.js"></script>
         <script>

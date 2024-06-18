@@ -9,8 +9,10 @@ import java.util.List;
 
 public class InitiateLists {
 
-    private final Connection connection;
-    public InitiateLists (Connection connection) throws SQLException {
+    private Connection connection = null;
+
+    public InitiateLists() {}
+    public InitiateLists(Connection connection) throws SQLException {
         this.connection = connection;
         initiatePlanets();
         initiateRoutes();
@@ -18,10 +20,10 @@ public class InitiateLists {
         initiateCompany();
     }
 
-    private List<RouteInfo> routeList = new ArrayList<>();
-    private List<Planet> planetList = new ArrayList<>();
-    private List<Provider> providerList = new ArrayList<>();
-    private List<Company> companyList = new ArrayList<>();
+    private static List<RouteInfo> routeList = new ArrayList<>();
+    private static List<Planet> planetList = new ArrayList<>();
+    private static List<Provider> providerList = new ArrayList<>();
+    private static List<Company> companyList = new ArrayList<>();
 
     public List<RouteInfo> getRouteList() {
         return routeList;

@@ -3,35 +3,78 @@ package com.cosmos.SQL.postgres;
 import com.cosmos.SQL.postgres.initiator.*;
 import com.cosmos.server.RequestHandler;
 
-import java.sql.*;
 import java.util.*;
 
 public class BestDealCalculator {
 
-    public BestDealCalculator (Connection connection) throws SQLException {
-        InitiateLists initiateLists = new InitiateLists(connection);
+    public BestDealCalculator () {
+        InitiateLists initiateLists = new InitiateLists();
         routeList = initiateLists.getRouteList();
         planetList = initiateLists.getPlanetList();
         providerList = initiateLists.getProviderList();
         companyList = initiateLists.getCompanyList();
-        this.connection = connection;
     }
     static List<RouteInfo> routeList = new ArrayList<>();
     static List<Planet> planetList = new ArrayList<>();
     static List<Provider> providerList = new ArrayList<>();
     static List<Company> companyList = new ArrayList<>();
-    private final Connection connection;
 
-    public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companyListProvidedByUser) throws SQLException{
+    private List<String> planetSetup(String originPlanet, String destinationPlanet) {
+        List<String> userDefinedPlanetNames = new ArrayList<>();
+        userDefinedPlanetNames.add(originPlanet);
+        userDefinedPlanetNames.add(destinationPlanet);
+        List<String> listOfDefinedPlanetUuid = new ArrayList<>();
+        for (String selectedPlanets : userDefinedPlanetNames) {
+            for (Planet planet : planetList) {
+                if (selectedPlanets.equals(planet.getName())) {
+                    listOfDefinedPlanetUuid.add(planet.getUuid());
+                }
+            }
+        }
+        return listOfDefinedPlanetUuid;
+    }
+
+    private List<String> companySetup(List<String> userDefinedCompanyNames) {
+        List<String> listOfDefinedCompanyUuid = new ArrayList<>();
+        for (String selectedCompanies : userDefinedCompanyNames) {
+            for (Company company : companyList) {
+                if (selectedCompanies.equals(company.getName())) {
+                    listOfDefinedCompanyUuid.add(company.getUuid());
+                }
+            }
+        }
+        return listOfDefinedCompanyUuid;
+    }
+
+    public void generateFilteredSolutions(String originPlanet, String destinationPlanet, List<String> companyListProvidedByUser) {
+        List<String> listOfDefinedCompanyUuid = companySetup(companyListProvidedByUser);
+        List<String> listOfDefinedPlanetUuid = planetSetup(originPlanet, destinationPlanet);
         List<String> currentPath = new ArrayList<>();
         List<String> routeUuid = new ArrayList<>();
-        List<List<String>> allPossibleRoutes = findAllPossibleRoutes(originPlanet, destinationPlanet, routeUuid, currentPath, new ArrayList<>(), null);
-        List<List<Provider>> suitableProvidersByRoute = filterByCompany(companyListProvidedByUser, allPossibleRoutes);
+        List<List<String>> allPossibleRoutes = findAllPossibleRoutes(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), routeUuid, currentPath, new ArrayList<>(), null);
+        List<List<Provider>> suitableProvidersByRoute = filterByCompany(listOfDefinedCompanyUuid, allPossibleRoutes);
         List<Long> routeDistance = routesDistance(allPossibleRoutes);
         List<List<String>> allPaths = getPaths(originPlanet, allPossibleRoutes);
         List<List<Provider>> suitableProvidersWithLowestCost = getLowestPrice(suitableProvidersByRoute);
         List<Long> totalPrice = totalPrice(suitableProvidersWithLowestCost);
-        prettyPrintPaths(allPaths, originPlanet, destinationPlanet, suitableProvidersWithLowestCost, routeDistance, totalPrice);
+        prettyPrintPaths(allPaths, suitableProvidersWithLowestCost, routeDistance, totalPrice);
+    }
+
+    public void generateSolutions(String originPlanet, String destinationPlanet) {
+        List<String> listOfDefinedPlanetUuid = planetSetup(originPlanet, destinationPlanet);
+        List<String> currentPath = new ArrayList<>();
+        List<String> routeUuid = new ArrayList<>();
+        List<List<String>> allPossibleRoutes = findAllPossibleRoutes(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), routeUuid, currentPath, new ArrayList<>(), null);
+        List<Long> routeDistance = routesDistance(allPossibleRoutes);
+        List<List<String>> allPaths = getPaths(originPlanet, allPossibleRoutes);
+        List<String> allCompaniesList = new ArrayList<>();
+        for (Company company : companyList) {
+            allCompaniesList.add(company.getUuid());
+        }
+        List<List<Provider>> suitableProvidersByRoute = filterByCompany(allCompaniesList, allPossibleRoutes);
+        List<List<Provider>> suitableProvidersWithLowestCost = getLowestPrice(suitableProvidersByRoute);
+        List<Long> totalPrice = totalPrice(suitableProvidersWithLowestCost);
+        prettyPrintPaths(allPaths, suitableProvidersWithLowestCost, routeDistance, totalPrice);
     }
 
     /**
@@ -182,8 +225,7 @@ public class BestDealCalculator {
      * Prints out all routes filtered by companies, providing the best prices and travel distances
      * along with company names being used.
      */
-    private void prettyPrintPaths(List<List<String>> allPaths, String originPlanet,
-                                  String destinationPlanet, List<List<Provider>> suitableProvidersWithLowestCost,
+    private void prettyPrintPaths(List<List<String>> allPaths, List<List<Provider>> suitableProvidersWithLowestCost,
                                   List<Long> routeDistance, List<Long> totalPrice) {
 
         List<String> prettyPrint = new ArrayList<>();
@@ -203,16 +245,6 @@ public class BestDealCalculator {
                     String.join("", STR."total distance: \{String.valueOf(routeDistance.get(i))}")));
         }
 
-        String origin = "";
-        String destination = "";
-        for (Planet planet : planetList) {
-            if (planet.getUuid().equals(originPlanet)) {
-                origin = planet.getName();
-            } else if (planet.getUuid().equals(destinationPlanet)) {
-                destination = planet.getName();
-            }
-        }
-
         List<String> selectedCompanies = new ArrayList<>();
         for (List<Provider> providers : suitableProvidersWithLowestCost) {
             for (Provider provider : providers) {
@@ -226,7 +258,7 @@ public class BestDealCalculator {
         for (int i = 0; i < prettyPrint.size(); i++) {
             stringBuilder.append("<br>");
             stringBuilder.append(prettyPrint.get(i));
-            stringBuilder.append("</br>");
+            stringBuilder.append("<br>");
         }
         RequestHandler.setPath(stringBuilder.toString());
 
@@ -240,56 +272,39 @@ public class BestDealCalculator {
             }
         }
         RequestHandler.setCompanies(stringBuilder.toString());
-
-
-        //storeUserChoice(suitableProvidersWithLowestCost);
     }
+/*
+    private void storeUserChoice(List<List<Provider>> suitableProvidersWithLowestCost, int userRouteChoice, String userFirstName, String userLastName) {
+        String reservation = "INSERT INTO reservation(" +
+                "uuid, first_name, last_name)" +
+                "VALUES (?, ?, ?)";
+        UUID reservationUuid = UUID.randomUUID();
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(reservation);
+            preparedStatement.setObject(1, reservationUuid);
+            preparedStatement.setString(2, userFirstName);
+            preparedStatement.setString(3, userLastName);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
 
-    private void storeUserChoice(List<List<Provider>> suitableProvidersWithLowestCost) {
-        System.out.println("Would you like to select a travel option?");
-        System.out.println("Y / N");
-        Scanner scanner = new Scanner(System.in);
-        String userChoice = scanner.next().toUpperCase();
-
-        if (userChoice.equals("Y")) {
-            System.out.println("Please choose an available route");
-            int userRouteChoice = scanner.nextInt();
-            System.out.println("Please enter you first name");
-            String userFirstName = scanner.next();
-            System.out.println("Please enter you last name");
-            String userLastName = scanner.next();
-
-            String reservation = "INSERT INTO reservation(" +
-                    "uuid, first_name, last_name)" +
-                    "VALUES (?, ?, ?)";
-            UUID reservationUuid = UUID.randomUUID();
+        String reservedRoutes = "INSERT INTO reserved_routes(" +
+                "uuid, reservation_uuid, provider_uuid)" +
+                "VALUES (?, ?, ?)";
+        for (int i = 0; i < suitableProvidersWithLowestCost.get(userRouteChoice - 1).size(); i++) {
             try {
-                PreparedStatement preparedStatement = connection.prepareStatement(reservation);
-                preparedStatement.setObject(1, reservationUuid);
-                preparedStatement.setString(2, userFirstName);
-                preparedStatement.setString(3, userLastName);
+                UUID reservedRoutesUuid = UUID.randomUUID();
+                PreparedStatement preparedStatement = connection.prepareStatement(reservedRoutes);
+                preparedStatement.setObject(1, reservedRoutesUuid);
+                preparedStatement.setObject(2, reservationUuid);
+                preparedStatement.setObject(3, UUID.fromString(suitableProvidersWithLowestCost.get(userRouteChoice - 1).get(i).getUuid()));
                 preparedStatement.execute();
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
             }
-
-            String reservedRoutes = "INSERT INTO reserved_routes(" +
-                    "uuid, reservation_uuid, provider_uuid)" +
-                    "VALUES (?, ?, ?)";
-            for (int i = 0; i < suitableProvidersWithLowestCost.get(userRouteChoice - 1).size(); i++) {
-                try {
-                    UUID reservedRoutesUuid = UUID.randomUUID();
-                    PreparedStatement preparedStatement = connection.prepareStatement(reservedRoutes);
-                    preparedStatement.setObject(1, reservedRoutesUuid);
-                    preparedStatement.setObject(2, reservationUuid);
-                    preparedStatement.setObject(3, UUID.fromString(suitableProvidersWithLowestCost.get(userRouteChoice - 1).get(i).getUuid()));
-                    preparedStatement.execute();
-                } catch (SQLException e) {
-                    System.out.println(e.getMessage());
-                }
-            }
         }
-    }
+    }*/
 }
 
 
