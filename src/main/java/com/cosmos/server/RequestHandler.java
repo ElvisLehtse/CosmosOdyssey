@@ -47,30 +47,24 @@ public class RequestHandler {
         }
     }
 
-    private static String path;
-    private static String companies;
-    public static int routeName = 0;
-    public static String firstName = "";
-    public static String lastName = "";
+    private static String cheapestPath;
+    private static String fastestPath;
+    private static String cheapestCompanies;
+    private static String fastestCompanies;
 
-    public static void setPath(String path) {
-        RequestHandler.path = path;
+    public static void setCheapestPath(String path) {
+        RequestHandler.cheapestPath = path;
     }
-    public static void setCompanies(String companies) {
-        RequestHandler.companies = companies;
+    public static void setFastestPath(String path) {
+        RequestHandler.fastestPath = path;
     }
-
-    public static int getRouteName() {
-        return routeName;
+    public static void setCheapestCompanies(String companies) {
+        RequestHandler.cheapestCompanies = companies;
     }
-
-    public static String getFirstName() {
-        return firstName;
+    public static void setFastestCompanies(String companies) {
+        RequestHandler.fastestCompanies = companies;
     }
 
-    public static String getLastName() {
-        return lastName;
-    }
     public void requestGetAndPost (HttpServer server, String requestPath) {
 
         server.createContext(requestPath, (HttpExchange exchange) ->
@@ -94,6 +88,7 @@ public class RequestHandler {
     }
     String originPlanet;
     String destinationPlanet;
+
     BestDealCalculator bestDealCalculator = new BestDealCalculator();
     private String filterQueryParams(String query) throws IOException, SQLException {
         List<String> userDefinedCompanyNames = new ArrayList<>();
@@ -115,14 +110,18 @@ public class RequestHandler {
             htmlString = routesAndFilterReader();
             htmlString = htmlString.replace("$originPlanet", originPlanet);
             htmlString = htmlString.replace("$destinationPlanet", destinationPlanet + ":");
-            htmlString = htmlString.replace("$path", path);
+            htmlString = htmlString.replace("$cheapestPath", cheapestPath);
+            htmlString = htmlString.replace("$fastestPath", fastestPath);
+
         } else {
             bestDealCalculator.generateFilteredSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames);
             htmlString = filteredRoutesReader();
             htmlString = htmlString.replace("$originPlanet", originPlanet);
             htmlString = htmlString.replace("$destinationPlanet", destinationPlanet + ":");
-            htmlString = htmlString.replace("$path", path);
-            htmlString = htmlString.replace("$companies", companies);
+            htmlString = htmlString.replace("$cheapestPath", cheapestPath);
+            htmlString = htmlString.replace("$fastestPath", fastestPath);
+            htmlString = htmlString.replace("$cheapestCompanies", cheapestCompanies);
+            htmlString = htmlString.replace("$fastestCompanies", fastestCompanies);
         }
         return htmlString;
     }

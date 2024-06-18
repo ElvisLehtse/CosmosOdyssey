@@ -77,7 +77,6 @@ public class PostgresDatabaseConnector {
             ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("GMT"));
             String currentTime = Timestamp.valueOf(zonedDateTime.toLocalDateTime()).toString();
             int isDatabaseValid = databaseTime.compareTo(currentTime);
-            System.out.println(isDatabaseValid);
             if (isDatabaseValid < 0) {
                 databaseIndex++;
                 checkIfApiHasValidDate(databaseIndex);
@@ -95,7 +94,6 @@ public class PostgresDatabaseConnector {
         ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("GMT"));
         String currentTime = Timestamp.valueOf(zonedDateTime.toLocalDateTime()).toString();
         int isApiValid = apiValidUntilFormatted.compareTo(currentTime);
-        System.out.println(isApiValid);
         if (isApiValid > 0) {
             createNewDatabase(databaseIndex);
         } else {
