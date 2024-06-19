@@ -28,6 +28,11 @@ public class RequestHandler {
         return Files.readString(registerFilePath);
     }
 
+    private String registerReader() throws IOException {
+        Path registerFilePath = Path.of("Register.html");
+        return Files.readString(registerFilePath);
+    }
+
     private BufferedReader requestBodyMsg (HttpExchange exchange) {
         InputStream inputStream = exchange.getRequestBody();
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
@@ -51,6 +56,8 @@ public class RequestHandler {
     private static String fastestPath;
     private static String cheapestCompanies;
     private static String fastestCompanies;
+    private String originPlanet;
+    private String destinationPlanet;
 
     public static void setCheapestPath(String path) {
         RequestHandler.cheapestPath = path;
@@ -86,43 +93,65 @@ public class RequestHandler {
             }
         });
     }
-    String originPlanet;
-    String destinationPlanet;
 
     BestDealCalculator bestDealCalculator = new BestDealCalculator();
     private String filterQueryParams(String query) throws IOException, SQLException {
         List<String> userDefinedCompanyNames = new ArrayList<>();
-
+        String routeName = "";
+        int postRequestNumber = 0;
         String[] params = query.split("&");
         for (String  param : params) {
             String[] keyValue = param.split("=");
             String name = keyValue[0];
             String value = keyValue[1];
             switch (name) {
-                case "originplanet" -> originPlanet = value;
+                case "originplanet" -> {
+                    originPlanet = value;
+                    postRequestNumber = 1;
+                }
                 case "destinationplanet" -> destinationPlanet = value;
-                case "companies" -> userDefinedCompanyNames.add(value.replace("+", " "));
+                case "companies" -> {
+                    userDefinedCompanyNames.add(value.replace("+", " "));
+                    postRequestNumber = 2;
+                }
+                case "routeName" -> {
+                    routeName = value;
+                    postRequestNumber = 3;
+                }
+                case "register" -> postRequestNumber = 4;
             }
         }
         String htmlString = "";
-        if (userDefinedCompanyNames.isEmpty()) {
-            bestDealCalculator.generateSolutions(originPlanet, destinationPlanet);
-            htmlString = routesAndFilterReader();
-            htmlString = htmlString.replace("$originPlanet", originPlanet);
-            htmlString = htmlString.replace("$destinationPlanet", destinationPlanet + ":");
-            htmlString = htmlString.replace("$cheapestPath", cheapestPath);
-            htmlString = htmlString.replace("$fastestPath", fastestPath);
-
-        } else {
-            bestDealCalculator.generateFilteredSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames);
-            htmlString = filteredRoutesReader();
-            htmlString = htmlString.replace("$originPlanet", originPlanet);
-            htmlString = htmlString.replace("$destinationPlanet", destinationPlanet + ":");
-            htmlString = htmlString.replace("$cheapestPath", cheapestPath);
-            htmlString = htmlString.replace("$fastestPath", fastestPath);
-            htmlString = htmlString.replace("$cheapestCompanies", cheapestCompanies);
-            htmlString = htmlString.replace("$fastestCompanies", fastestCompanies);
+        switch (postRequestNumber) {
+            case 1 -> {
+                bestDealCalculator.generateSolutions(originPlanet, destinationPlanet);
+                htmlString = routesAndFilterReader();
+                htmlString = htmlString.replace("$originPlanet", originPlanet);
+                htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
+                htmlString = htmlString.replace("$cheapestPath", cheapestPath);
+                htmlString = htmlString.replace("$fastestPath", fastestPath);
+            }
+            case 2 -> {
+                bestDealCalculator.generateFilteredSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames);
+                htmlString = filteredRoutesReader();
+                htmlString = htmlString.replace("$originPlanet", originPlanet);
+                htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
+                htmlString = htmlString.replace("$cheapestPath", cheapestPath);
+                htmlString = htmlString.replace("$fastestPath", fastestPath);
+                htmlString = htmlString.replace("$cheapestCompanies", cheapestCompanies);
+                htmlString = htmlString.replace("$fastestCompanies", fastestCompanies);
+            }
+            case 3 -> {
+                //store user route choice
+                htmlString = registerReader();
+            }
+            case 4 -> {} //Store user name in database
         }
+
+
+
+
+
         return htmlString;
     }
 

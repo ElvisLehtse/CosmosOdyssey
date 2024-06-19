@@ -5,6 +5,7 @@ import com.cosmos.server.RequestHandler;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class BestDealCalculator {
 
@@ -55,7 +56,7 @@ public class BestDealCalculator {
         List<List<String>> allPossibleRoutes = findAllPossibleRoutes(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), routeUuid, currentPath, new ArrayList<>(), null);
         List<List<Provider>> suitableProvidersByRoute = filterByCompany(listOfDefinedCompanyUuid, allPossibleRoutes);
         List<Long> routeDistance = routesDistance(allPossibleRoutes);
-        List<List<String>> allPaths = getPaths(originPlanet, allPossibleRoutes);
+        List<List<String>> allPaths = getPaths(listOfDefinedPlanetUuid.getFirst(), allPossibleRoutes);
         List<List<Provider>> suitableProvidersWithLowestCost = getLowestPrice(suitableProvidersByRoute);
         List<List<Provider>> suitableProvidersWithFastestTravel = getFastestTravelTime(suitableProvidersByRoute);
 
@@ -67,8 +68,11 @@ public class BestDealCalculator {
         List<String> currentPath = new ArrayList<>();
         List<String> routeUuid = new ArrayList<>();
         List<List<String>> allPossibleRoutes = findAllPossibleRoutes(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), routeUuid, currentPath, new ArrayList<>(), null);
+
+        Map<Integer, List<List<String>>> allPossibleProviders = findAllPossibleProviders(allPossibleRoutes);
+
         List<Long> routeDistance = routesDistance(allPossibleRoutes);
-        List<List<String>> allPaths = getPaths(originPlanet, allPossibleRoutes);
+        List<List<String>> allPaths = getPaths(listOfDefinedPlanetUuid.getFirst(), allPossibleRoutes);
         List<String> allCompaniesList = new ArrayList<>();
         for (Company company : companyList) {
             allCompaniesList.add(company.getUuid());
@@ -107,6 +111,55 @@ public class BestDealCalculator {
         return allPossibleRoutes;
     }
 
+    private Map<Integer, List<List<String>>> findAllPossibleProviders(List<List<String>> allPossibleRoutes) {
+        Map<Integer, List<List<String>>> allPossibleProviders = new HashMap<>();
+
+        Map<String, Set<String>> routeMap = new HashMap<>();
+        for (Provider provider : providerList) {
+            routeMap.computeIfAbsent(provider.getRoute_info_uuid(), index -> new HashSet<>()).add(provider.getUuid());
+        }
+        for (int i = 0; i < allPossibleRoutes.size(); i++) {
+            Map<String, Set<String>> routeMapFiltered = new HashMap<>();
+            for (int j = 0; j < allPossibleRoutes.get(i).size(); j++) {
+                routeMapFiltered.put(allPossibleRoutes.get(i).get(j), routeMap.get(allPossibleRoutes.get(i).get(j)));
+            }
+            List<List<String>> list = new LinkedList<>();
+            recurse(routeMapFiltered, new LinkedList<>(routeMapFiltered.keySet()).listIterator(), new HashMap<>(), list);
+            allPossibleProviders.put(i, list);
+        }
+
+        /*
+        for (int i = 0; i < allPossibleProviders.size(); i++) {
+            for (int j = 0; j < allPossibleProviders.get(i).size(); j++) {
+                System.out.println(allPossibleProviders.get(i).get(j));
+            }
+            System.out.println("\n");
+        }
+         */
+         return allPossibleProviders;
+    }
+
+    private void recurse(Map<String,Set<String>> map, ListIterator<String> listIterator, Map<String,String> cur, List<List<String>> list ) {
+        if( !listIterator.hasNext() ) {
+            List<String> tempList = new ArrayList<>();
+            for( String key : cur.keySet() ) {
+                tempList.add(cur.get(key));
+            }
+            list.add(tempList);
+        } else {
+            String key = listIterator.next();
+            Set<String> set = map.get(key);
+
+            for( String value : set ) {
+                cur.put(key, value);
+                recurse(map, listIterator, cur, list);
+                cur.remove(key);
+            }
+            listIterator.previous();
+        }
+    }
+
+
     /**
      * Filters all possible routes by companies provided by the end user.
      * Filtered routes are returned along with provider information as a list within a list,
@@ -126,9 +179,7 @@ public class BestDealCalculator {
             for (String s : allPossibleRoute) {
                 for (Provider suitableProvider : suitableProviders) {
                     if (s.equals(suitableProvider.getRoute_info_uuid())) {
-                        if (!tempListForSuitableProvidersByRoute.contains(suitableProvider)) {
-                            tempListForSuitableProvidersByRoute.add(suitableProvider);
-                        }
+                        tempListForSuitableProvidersByRoute.add(suitableProvider);
                     }
                 }
             }
@@ -291,20 +342,20 @@ public class BestDealCalculator {
         List<String> prettyPrintFastest = new ArrayList<>();
         for (int i = 0; i < allPaths.size(); i++) {
             List<String> allPath = allPaths.get(i);
-            List<String> tempList = new ArrayList<>();
+            List<String> planetName = new ArrayList<>();
             for (String path : allPath) {
                 for (Planet planet : planetList) {
                     if (planet.getUuid().equals(path)) {
-                        tempList.add(planet.getName());
+                        planetName.add(planet.getName());
                         break;
                     }
                 }
             }
-            prettyPrintCheapest.add(String.join(" | ", String.join("", STR."Route nr: \{i + 1}"), String.join(" -> ", tempList),
+            prettyPrintCheapest.add(String.join(" | ", String.join(" -> ", planetName),
                     String.join("", STR."total cost: \{String.valueOf(priceForLowestCost.get(i))}"), String.join("", STR."total travel time: \{travelTimeForLowestCost.get(i)}"),
                     String.join("", STR."total distance: \{String.valueOf(routeDistance.get(i))}")));
 
-            prettyPrintFastest.add(String.join(" | ", String.join("", STR."Route nr: \{i + 1}"), String.join(" -> ", tempList),
+            prettyPrintFastest.add(String.join(" | ", String.join(" -> ", planetName),
                     String.join("", STR."total cost: \{String.valueOf(priceForFastestTravel.get(i))}"), String.join("", STR."total travel time: \{travelTimeForFastestTravel.get(i)}"),
                     String.join("", STR."total distance: \{String.valueOf(routeDistance.get(i))}")));
         }
@@ -329,17 +380,19 @@ public class BestDealCalculator {
 
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < prettyPrintCheapest.size(); i++) {
-            stringBuilder.append("<br>");
-            stringBuilder.append(prettyPrintCheapest.get(i));
-            stringBuilder.append("<br>");
+            stringBuilder.append("<br><form actions=\"\" method=\"post\">");
+            stringBuilder.append(STR."<button name=\"routeName\" type=\"submit\" value=\"cheapest\{i+1}\">Reserve route nr \{i+1}</button>");
+            stringBuilder.append(STR." \{prettyPrintCheapest.get(i)}");
+            stringBuilder.append("</form><br>");
         }
         RequestHandler.setCheapestPath(stringBuilder.toString());
 
         stringBuilder = new StringBuilder();
         for (int i = 0; i < prettyPrintFastest.size(); i++) {
-            stringBuilder.append("<br>");
-            stringBuilder.append(prettyPrintFastest.get(i));
-            stringBuilder.append("<br>");
+            stringBuilder.append("<br><form actions=\"\" method=\"post\">");
+            stringBuilder.append(STR."<button name=\"routeName\" type=\"submit\" value=\"fastest\{i+1}\">Reserve route nr \{i+1}</button>");
+            stringBuilder.append(STR." \{prettyPrintFastest.get(i)}");
+            stringBuilder.append("</form><br>");
         }
         RequestHandler.setFastestPath(stringBuilder.toString());
 
