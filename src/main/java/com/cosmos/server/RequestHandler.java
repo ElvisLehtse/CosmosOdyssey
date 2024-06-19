@@ -18,11 +18,6 @@ public class RequestHandler {
         return Files.readString(mainPageFilePath);
     }
 
-    private String routesAndFilterReader() throws IOException {
-        Path registerFilePath = Path.of("RoutesAndFilter.html");
-        return Files.readString(registerFilePath);
-    }
-
     private String filteredRoutesReader() throws IOException {
         Path registerFilePath = Path.of("FilteredRoutes.html");
         return Files.readString(registerFilePath);
@@ -54,6 +49,7 @@ public class RequestHandler {
 
     private static String cheapestPath;
     private static String fastestPath;
+    private static String allPath;
     private static String cheapestCompanies;
     private static String fastestCompanies;
     private String originPlanet;
@@ -64,6 +60,9 @@ public class RequestHandler {
     }
     public static void setFastestPath(String path) {
         RequestHandler.fastestPath = path;
+    }
+    public static void setAllPath(String path) {
+        RequestHandler.allPath = path;
     }
     public static void setCheapestCompanies(String companies) {
         RequestHandler.cheapestCompanies = companies;
@@ -124,15 +123,7 @@ public class RequestHandler {
         String htmlString = "";
         switch (postRequestNumber) {
             case 1 -> {
-                bestDealCalculator.generateSolutions(originPlanet, destinationPlanet);
-                htmlString = routesAndFilterReader();
-                htmlString = htmlString.replace("$originPlanet", originPlanet);
-                htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
-                htmlString = htmlString.replace("$cheapestPath", cheapestPath);
-                htmlString = htmlString.replace("$fastestPath", fastestPath);
-            }
-            case 2 -> {
-                bestDealCalculator.generateFilteredSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames);
+                bestDealCalculator.generateUnfilteredSolutions(originPlanet, destinationPlanet);
                 htmlString = filteredRoutesReader();
                 htmlString = htmlString.replace("$originPlanet", originPlanet);
                 htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
@@ -140,6 +131,18 @@ public class RequestHandler {
                 htmlString = htmlString.replace("$fastestPath", fastestPath);
                 htmlString = htmlString.replace("$cheapestCompanies", cheapestCompanies);
                 htmlString = htmlString.replace("$fastestCompanies", fastestCompanies);
+                htmlString = htmlString.replace("$allPath", allPath);
+            }
+            case 2 -> {
+                bestDealCalculator.generateSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames);
+                htmlString = filteredRoutesReader();
+                htmlString = htmlString.replace("$originPlanet", originPlanet);
+                htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
+                htmlString = htmlString.replace("$cheapestPath", cheapestPath);
+                htmlString = htmlString.replace("$fastestPath", fastestPath);
+                htmlString = htmlString.replace("$cheapestCompanies", cheapestCompanies);
+                htmlString = htmlString.replace("$fastestCompanies", fastestCompanies);
+                htmlString = htmlString.replace("$allPath", allPath);
             }
             case 3 -> {
                 //store user route choice
