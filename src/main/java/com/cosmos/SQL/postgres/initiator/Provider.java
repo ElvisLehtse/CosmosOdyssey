@@ -1,6 +1,8 @@
 package com.cosmos.SQL.postgres.initiator;
 
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.util.List;
 
 public class Provider {
 
@@ -42,5 +44,8 @@ public class Provider {
         this.price = price;
         this.flight_start = flight_start;
         this.flight_end = flight_end;
+    }
+    public long getTravelTime() {
+        return Duration.between(getFlight_start().toLocalDateTime(), getFlight_end().toLocalDateTime()).toMinutes();
     }
 }
