@@ -11,8 +11,8 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            PostgresDatabaseConnector.checkIfDatabaseExists();
-            new InitiateLists(PostgresDatabaseConnector.connection());
+            String priceListUuid = PostgresDatabaseConnector.checkIfDatabaseExists();
+            new InitiateLists(PostgresDatabaseConnector.connection(), priceListUuid);
         } catch (IOException | SQLException e) {
             System.out.println(e.getMessage());
         }

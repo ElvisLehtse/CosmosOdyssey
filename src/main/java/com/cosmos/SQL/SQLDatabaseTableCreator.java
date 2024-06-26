@@ -5,5 +5,6 @@ import java.sql.SQLException;
 
 public interface SQLDatabaseTableCreator {
 
-    void createAllTables(JSONObject apiData) throws SQLException;
+    String createAllTables(JSONObject apiData) throws SQLException;
+    String createTables(JSONObject apiData) throws SQLException;
 }

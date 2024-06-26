@@ -20,16 +20,26 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         PostgresTableCreator.connection = connection;
     }
 
-    public void createAllTables(JSONObject apiData) throws SQLException {
+    public String createAllTables(JSONObject apiData) throws SQLException {
         this.apiData = apiData;
-        insertPriceListTable();
+        String priceListUuid = insertPriceListTable();
         insertPlanetTable();
-        insertRouteInfoTable();
+        insertRouteInfoTable(priceListUuid);
         insertCompanyTable();
         insertProviderTable();
+        return priceListUuid;
     }
 
-    private void insertPriceListTable() throws SQLException {
+    public String createTables(JSONObject apiData) throws SQLException {
+        this.apiData = apiData;
+        String priceListUuid = insertPriceListTable();
+        insertRouteInfoTable(priceListUuid);
+        insertCompanyTable();
+        insertProviderTable();
+        return priceListUuid;
+    }
+
+    private String insertPriceListTable() throws SQLException {
         String uuid = apiData.getString("id");
         String validUntil = apiData.getString("validUntil");
         String validUntilFormatted = validUntil.replace("T", " ").replace("Z", "");
@@ -43,6 +53,7 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         preparedStatement.setObject(1, UUID.fromString(uuid));
         preparedStatement.setTimestamp(2, timestamp);
         preparedStatement.execute();
+        return uuid;
     }
 
     private void insertPlanetTable() throws SQLException {
@@ -89,18 +100,11 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
             preparedStatement.execute();
         }
     }
-    private void insertRouteInfoTable() throws SQLException {
+    private void insertRouteInfoTable(String priceListUuid) throws SQLException {
         String sql = "INSERT INTO route_info(" +
                 "uuid, price_list_uuid, from_planet_uuid, to_planet_uuid, distance)" +
                 "VALUES (?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
-
-        String sqlReadPriceList = "SELECT uuid FROM price_list;";
-        PreparedStatement readStatement = connection.prepareStatement(sqlReadPriceList);
-        ResultSet resultSet = readStatement.executeQuery();
-        resultSet.next();
-        String priceListUuid = resultSet.getString(1);
-
         JSONArray legsArray = apiData.getJSONArray("legs");
         for (int i = 0; i < legsArray.length(); i++) {
             JSONObject legsObject = (JSONObject) legsArray.get(i);
@@ -111,14 +115,13 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
             JSONObject to = (JSONObject) routeInfo.get("to");
 
             String sqlReadPlanet = "SELECT * FROM planet;";
-            readStatement = connection.prepareStatement(sqlReadPlanet);
-            resultSet = readStatement.executeQuery();
+            PreparedStatement readStatement = connection.prepareStatement(sqlReadPlanet);
+            ResultSet resultSet = readStatement.executeQuery();
 
             ArrayList<Planet> planetList = new ArrayList<>();
             while (resultSet.next()) {
                 planetList.add(new Planet(resultSet.getString(1), resultSet.getString(2)));
             }
-
             preparedStatement.setObject(1,UUID.fromString(id));
             preparedStatement.setObject(2,UUID.fromString(priceListUuid));
             String name = from.getString("name");
@@ -145,7 +148,6 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
                 "uuid, name)" +
                 "VALUES (?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
-
         JSONArray legsArray = apiData.getJSONArray("legs");
         for (int i = 0; i < legsArray.length(); i++) {
             JSONObject legsObject = (JSONObject) legsArray.get(i);

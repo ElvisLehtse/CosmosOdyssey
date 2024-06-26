@@ -12,12 +12,12 @@ public class InitiateLists {
     private Connection connection = null;
 
     public InitiateLists() {}
-    public InitiateLists(Connection connection) throws SQLException {
+    public InitiateLists(Connection connection, String priceListUuid) throws SQLException {
         this.connection = connection;
         initiatePlanets();
-        initiateRoutes();
-        initiateProviders();
-        initiateCompany();
+        initiateRoutes(priceListUuid);
+        initiateCompany(priceListUuid);
+        initiateProviders(priceListUuid);
     }
 
     private static List<RouteInfo> routeList = new ArrayList<>();
@@ -52,9 +52,9 @@ public class InitiateLists {
         }
     }
 
-    private void initiateRoutes() throws SQLException {
+    private void initiateRoutes(String priceListUuid) throws SQLException {
         routeList = new ArrayList<>();
-        String sql= "SELECT * FROM route_info;";
+        String sql= STR."SELECT * FROM route_info WHERE price_list_uuid = '\{priceListUuid}';";
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
 
@@ -64,9 +64,10 @@ public class InitiateLists {
         }
     }
 
-    private void initiateProviders() throws SQLException {
+    private void initiateProviders(String priceListUuid) throws SQLException {
         providerList = new ArrayList<>();
-        String sql= "SELECT * FROM provider;";
+        String sql= "SELECT provider.uuid, company_uuid, route_info_uuid, price, flight_start, flight_end FROM provider " +
+                "INNER JOIN route_info ON route_info.uuid = provider.route_info_uuid WHERE price_list_uuid = '" + priceListUuid + "';";
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
 
@@ -76,9 +77,13 @@ public class InitiateLists {
         }
     }
 
-    private void initiateCompany() throws SQLException {
+    private void initiateCompany(String priceListUuid) throws SQLException {
         companyList = new ArrayList<>();
-        String sql= "SELECT * FROM company;";
+        String sql= "SELECT DISTINCT company.uuid, name FROM company INNER JOIN provider " +
+                "ON company.uuid = provider.company_uuid INNER JOIN route_info " +
+                "ON provider.route_info_uuid = route_info.uuid WHERE price_list_uuid = '" + priceListUuid +"';";
+
+
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
 
