@@ -11,27 +11,15 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class RequestHandler {
 
-    private String planetSelectionReader() throws IOException {
-        Path mainPageFilePath = Path.of("PlanetSelection.html");
-        return Files.readString(mainPageFilePath);
-    }
-
-    private String filteredRoutesReader() throws IOException {
-        Path registerFilePath = Path.of("FilteredRoutes.html");
-        return Files.readString(registerFilePath);
-    }
-
-    private String registerReader() throws IOException {
-        Path registerFilePath = Path.of("Register.html");
-        return Files.readString(registerFilePath);
+    private String htmlReader() throws IOException {
+        Path hmtlPath = Path.of("CosmosOdyssey.html");
+        return Files.readString(hmtlPath);
     }
 
     private BufferedReader requestBodyMsg (HttpExchange exchange) {
@@ -73,7 +61,12 @@ public class RequestHandler {
             String reply = "";
             try {
                 if (exchange.getRequestMethod().equals("GET")) {
-                    reply = planetSelectionReader();
+                    String htmlString = htmlReader();
+                    htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
+                    htmlString = htmlString.replace("displayOfResultSelection", "none");
+                    htmlString = htmlString.replace("displayOfRegisterSelection", "none");
+                    htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
+                    reply = htmlString;
                 } else if (exchange.getRequestMethod().equals("POST")) {
                     BufferedReader requestBody = requestBodyMsg(exchange);
                     String query = requestBody.readLine();
@@ -116,11 +109,9 @@ public class RequestHandler {
                     routeNumber = Integer.parseInt(value);
                     postRequestNumber = 3;
                 }
-                case "firstname" -> {
-                    firstName = value;
-                    postRequestNumber = 4;
-                }
+                case "firstname" -> firstName = value;
                 case "lastname" -> lastName = value;
+                case "register" -> postRequestNumber = 4;
                 case "options" -> {
                     filterBy = value;
                     if (userDefinedCompanyNames.isEmpty()) {
@@ -128,80 +119,60 @@ public class RequestHandler {
                     } else {
                         postRequestNumber = 2;
                     }
-
                 }
+                default -> postRequestNumber = 5;
             }
         }
         String htmlString = "";
         switch (postRequestNumber) {
             case 1 -> {
                 bestDealCalculator.generateUnfilteredSolutions(originPlanet, destinationPlanet, filterBy);
-                htmlString = filteredRoutesReader();
+                htmlString = htmlReader();
                 htmlString = htmlString.replace("$originPlanet", originPlanet);
                 htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
                 htmlString = htmlString.replace("$path", path);
+                htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
+                htmlString = htmlString.replace("displayOfResultSelection", "unset");
+                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
+                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
             }
             case 2 -> {
                 bestDealCalculator.generateSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames, filterBy);
-                htmlString = filteredRoutesReader();
+                htmlString = htmlReader();
                 htmlString = htmlString.replace("$originPlanet", originPlanet);
                 htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
                 htmlString = htmlString.replace("$path", path);
+                htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
+                htmlString = htmlString.replace("displayOfResultSelection", "unset");
+                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
+                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
             }
             case 3 -> {
-                htmlString = registerReader();
+                htmlString = htmlReader();
+                htmlString = htmlString.replace("displayOfPlanetSelection", "none");
+                htmlString = htmlString.replace("displayOfResultSelection", "none");
+                htmlString = htmlString.replace("displayOfRegisterSelection", "unset");
+                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
             }
 
             case 4 -> {
                 Connection connection = PostgresDatabaseConnector.connection();
                 PostgresTableCreator postgresTableCreator = new PostgresTableCreator(connection);
                 postgresTableCreator.storeUserChoice(sortedListForGettingUserChoice, routeNumber, firstName, lastName);
-                htmlString = "<html><body><span>Your choice has been registered.</span></body></html>";
+                htmlString = htmlReader();
+                htmlString = htmlString.replace("displayOfPlanetSelection", "none");
+                htmlString = htmlString.replace("displayOfResultSelection", "none");
+                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
+                htmlString = htmlString.replace("displaySuccessfulRegistration", "unset");
+            }
+            case 5 -> {
+                htmlString = htmlReader();
+                htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
+                htmlString = htmlString.replace("displayOfResultSelection", "none");
+                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
+                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
             }
         }
         return htmlString;
     }
-
-   /* private void secondPostRequest() {
-        List<String> userDefinedCompanyNames = new ArrayList<>();
-        String originPlanet = null;
-        String destinationPlanet;
-
-
-
-            switch (name) {
-                case "companies" -> userDefinedCompanyNames.add(value.replace("+", " "));
-                case "originplanet" -> originPlanet = value;
-                case "destinationplanet" -> {
-                    destinationPlanet = value;
-                    PostgresDatabaseConnector postgresDatabaseConnector = new PostgresDatabaseConnector();
-                    try {
-                        postgresDatabaseConnector.checkIfDatabaseExists(originPlanet, destinationPlanet);
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                    }
-                    reply = "<html>" +
-                            "   <body>" +
-                            "       <p>" +
-                            "           All possible routes from " + originPlanet + " to " + destinationPlanet + ":<br>" +
-                            path + "<br>" +
-                            "           When traveling with companies:<br>" +
-                            companies +
-                            "       </p>" +
-                            registerReader() +
-                            "   </body>" +
-                            "</html>";
-                }
-                case "routename" -> routeName = Integer.parseInt(value);
-                case "fistname" -> firstName = value;
-                case "lastname" -> {
-                    lastName = value;
-                    reply = "You have been registred!";
-                }
-            }
-        }
-    }*/
-
-
-
 }
