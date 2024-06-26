@@ -82,8 +82,6 @@ public class InitiateLists {
         String sql= "SELECT DISTINCT company.uuid, name FROM company INNER JOIN provider " +
                 "ON company.uuid = provider.company_uuid INNER JOIN route_info " +
                 "ON provider.route_info_uuid = route_info.uuid WHERE price_list_uuid = '" + priceListUuid +"';";
-
-
         PreparedStatement readStatement = connection.prepareStatement(sql);
         ResultSet resultSet = readStatement.executeQuery();
 

@@ -55,7 +55,6 @@ public class RequestHandler {
     }
 
     public void requestGetAndPost (HttpServer server, String requestPath) {
-
         server.createContext(requestPath, (HttpExchange exchange) ->
         {
             String reply = "";
@@ -95,7 +94,7 @@ public class RequestHandler {
             String name = keyValue[0];
             String value = keyValue[1];
             switch (name) {
-                case "originplanet" -> {
+                case "originplanet" -> {;
                     originPlanet = value;
                     filterBy = initialFiltering;
                     postRequestNumber = 1;

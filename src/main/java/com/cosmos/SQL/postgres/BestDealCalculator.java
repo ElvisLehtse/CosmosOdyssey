@@ -267,23 +267,9 @@ public class BestDealCalculator {
         public Long getPrice() {
             return price;
         }
-
-        public String getTravelTime() {
-            return travelTime;
-        }
-
         public Long getDistance() {
             return distance;
         }
-
-        public String getPath() {
-            return path;
-        }
-
-        public String getCompany() {
-            return company;
-        }
-
         Long price;
         String travelTime;
         Long distance;
