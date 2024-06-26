@@ -2,20 +2,22 @@ package com.cosmos.SQL.postgres;
 
 import com.cosmos.SQL.SQLDatabaseTableCreator;
 import com.cosmos.SQL.postgres.initiator.Planet;
+import com.cosmos.SQL.postgres.initiator.Provider;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class PostgresTableCreator implements SQLDatabaseTableCreator {
 
     private JSONObject apiData;
-    private final Connection connection;
+    private static Connection connection;
 
     public PostgresTableCreator (Connection connection) {
-        this.connection = connection;
+        PostgresTableCreator.connection = connection;
     }
 
     public void createAllTables(JSONObject apiData) throws SQLException {
@@ -208,6 +210,38 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
                 preparedStatement.setTimestamp(5, Timestamp.valueOf(flightStartFormatted));
                 preparedStatement.setTimestamp(6, Timestamp.valueOf(flightEndFormatted));
                 preparedStatement.execute();
+            }
+        }
+    }
+
+    public void storeUserChoice(List<List<Provider>> sortedListForGettingUserChoice, int routeNumber, String userFirstName, String userLastName) {
+        String reservation = "INSERT INTO reservation(" +
+                "uuid, first_name, last_name)" +
+                "VALUES (?, ?, ?)";
+        UUID reservationUuid = UUID.randomUUID();
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(reservation);
+            preparedStatement.setObject(1, reservationUuid);
+            preparedStatement.setString(2, userFirstName);
+            preparedStatement.setString(3, userLastName);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+        String reservedRoutes = "INSERT INTO reserved_routes(" +
+                "uuid, reservation_uuid, provider_uuid)" +
+                "VALUES (?, ?, ?)";
+        for (int i = 0; i < sortedListForGettingUserChoice.get(routeNumber - 1).size(); i++) {
+            try {
+                UUID reservedRoutesUuid = UUID.randomUUID();
+                PreparedStatement preparedStatement = connection.prepareStatement(reservedRoutes);
+                preparedStatement.setObject(1, reservedRoutesUuid);
+                preparedStatement.setObject(2, reservationUuid);
+                preparedStatement.setObject(3, UUID.fromString(sortedListForGettingUserChoice.get(routeNumber - 1).get(i).getUuid()));
+                preparedStatement.execute();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
             }
         }
     }

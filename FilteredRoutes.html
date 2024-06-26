@@ -23,22 +23,19 @@
                     <option value="Galaxy Express"> Galaxy Express</option>
                     <option value="Explore Origin"> Explore Origin</option>
                     <option value="Spacegenix"> Spacegenix</option>
-                </select>                
+                </select>
+                <br>
+                <label for="options">Show results</label>
+                <select name="options" id="options">
+                    <option value="price">Lowest price</option>
+                    <option value="time">fastest treavel time</option>
+                </select>
             </div>
             <button type="submit">Submit</button>
         </form>
         <br>
-        <span>Routes form $originPlanet to $destinationPlanet</span><br><br>
-        <span>Cheapest choices:</span><br>
-        <span>$cheapestPath</span><br>
-        <span>When traveling with companies:</span><br>
-        <span>$cheapestCompanies</span><br>
-        <span>Fastest choices:</span><br>
-        <span>$fastestPath</span><br>
-        <span>When traveling with companies:</span><br>
-        <span>$fastestCompanies</span><br>
-        <span>Other choices (showing max 20 per route):</span><br>
-        <span>$allPath</span><br>
+        <span>Routes form $originPlanet to $destinationPlanet</span><br>
+        <span>$path:</span><br>
         <script src="https://cdn.jsdelivr.net/gh/habibmhamadi/multi-select-tag@3.0.1/dist/js/multi-select-tag.js"></script>
         <script>
             new MultiSelectTag('companies')

@@ -1,8 +1,8 @@
 package com.cosmos.SQL.postgres;
 
 import com.cosmos.SQL.postgres.initiator.*;
+import com.cosmos.server.RequestHandler;
 
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,23 +48,23 @@ public class BestDealCalculator {
         return listOfDefinedCompanyUuid;
     }
 
-    public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companiesList) {
+    public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companiesList, String filterBy) {
         List<String> listOfDefinedCompanyUuid = companySetup(companiesList);
         List<String> listOfDefinedPlanetUuid = planetSetup(originPlanet, destinationPlanet);
         List<String> currentPath = new ArrayList<>();
         List<RouteInfo> routeUuid = new ArrayList<>();
         List<List<RouteInfo>> allPossibleRoutes = findAllPossibleRoutes(listOfDefinedPlanetUuid.getFirst(), listOfDefinedPlanetUuid.getLast(), currentPath, routeUuid, new ArrayList<>(), null);
-        List<List<Provider>> suitableProvidersByRoute = suitableProvidersFiltered(listOfDefinedCompanyUuid, allPossibleRoutes);
+        List<List<Provider>> suitableProvidersByRoute = suitableProvidersFiltered(listOfDefinedCompanyUuid, allPossibleRoutes, filterBy);
         Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes = findAllPossibleProviderCombinations(allPossibleRoutes, suitableProvidersByRoute);
-        prettyPrintPaths(allPossibleProviderCombinationForAllRoutes, allPossibleRoutes, originPlanet);
+        prettyPrintPaths(allPossibleProviderCombinationForAllRoutes, allPossibleRoutes, originPlanet, filterBy);
     }
 
-    public void generateUnfilteredSolutions(String originPlanet, String destinationPlanet) {
+    public void generateUnfilteredSolutions(String originPlanet, String destinationPlanet, String filterBy) {
         List<String> allCompaniesList = new ArrayList<>();
         for (Company company : companyList) {
             allCompaniesList.add(company.getName());
         }
-        generateSolutions(originPlanet, destinationPlanet, allCompaniesList);
+        generateSolutions(originPlanet, destinationPlanet, allCompaniesList, filterBy);
     }
 
     /**
@@ -98,7 +98,7 @@ public class BestDealCalculator {
      * containing provider uuid, company uuid, route info uuid, price, flight start and flight end information.
      */
 
-    private List<List<Provider>> suitableProvidersFiltered(List<String> companyListProvidedByUser, List<List<RouteInfo>> allPossibleRoutes) {
+    private List<List<Provider>> suitableProvidersFiltered(List<String> companyListProvidedByUser, List<List<RouteInfo>> allPossibleRoutes, String filterBy) {
         List<List<Provider>> suitableProvidersByRoute = new ArrayList<>();
         List<Provider> suitableProvidersByCompany = new ArrayList<>();
         for (Provider provider : providerList) {
@@ -112,20 +112,19 @@ public class BestDealCalculator {
 
         List<Provider> suitableProviders = new ArrayList<>();
 
-        // CHOICE!
-        for (Map.Entry<String, List<Provider>> entry : groupedProviders.entrySet()) {
-            List<Provider> providers = entry.getValue();
-            providers.sort(Comparator.comparingLong(Provider::getPrice));
-            suitableProviders.addAll(providers.stream().limit(3).toList());
+        if (filterBy.equals("price")) {
+            for (Map.Entry<String, List<Provider>> entry : groupedProviders.entrySet()) {
+                List<Provider> providers = entry.getValue();
+                providers.sort(Comparator.comparingLong(Provider::getPrice));
+                suitableProviders.addAll(providers.stream().limit(3).toList());
+            }
+        } else if (filterBy.equals("time")) {
+            for (Map.Entry<String, List<Provider>> entry : groupedProviders.entrySet()) {
+                List<Provider> providers = entry.getValue();
+                providers.sort(Comparator.comparingLong(Provider::getTravelTime));
+                suitableProviders.addAll(providers.stream().limit(3).toList());
+            }
         }
-        // CHOICE!
-        for (Map.Entry<String, List<Provider>> entry : groupedProviders.entrySet()) {
-            List<Provider> providers = entry.getValue();
-            providers.sort(Comparator.comparingLong(Provider::getTravelTime));
-            suitableProviders.addAll(providers.stream().limit(3).toList());
-        }
-
-
 
         for (List<RouteInfo> allPossibleRoute : allPossibleRoutes) {
             List<Provider> tempListForSuitableProvidersByRoute = new ArrayList<>();
@@ -221,17 +220,16 @@ public class BestDealCalculator {
         return totalPriceMap;
     }
 
-    private Map<Integer, List<String>> totalTravelTimeForAllProviders(Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes) {
-        Map<Integer, List<String>> travelTimeForAll = new HashMap<>();
+    private Map<Integer, List<Long>> totalTravelTimeForAllProviders(Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes) {
+        Map<Integer, List<Long>> travelTimeForAll = new HashMap<>();
         for (int i = 0; i < allPossibleProviderCombinationForAllRoutes.size(); i++) {
             travelTimeForAll.put(i, totalTravelTimeForSpecificProviders(allPossibleProviderCombinationForAllRoutes.get(i)));
         }
         return travelTimeForAll;
     }
 
-    private List<String> totalTravelTimeForSpecificProviders(List<List<Provider>> suitableProviders) {
-        int hoursInDay = 24;
-        List<String> travelTime = new ArrayList<>();
+    private List<Long> totalTravelTimeForSpecificProviders(List<List<Provider>> suitableProviders) {
+        List<Long> travelTime = new ArrayList<>();
         for (int i = 0; i < suitableProviders.size(); i++) {
             long tempHours;
             long hours = 0;
@@ -239,10 +237,7 @@ public class BestDealCalculator {
                 tempHours = Duration.between(suitableProviders.get(i).get(j).getFlight_start().toLocalDateTime(), suitableProviders.get(i).get(j).getFlight_end().toLocalDateTime()).toHours();
                 hours = hours + tempHours;
             }
-            long days = hours / hoursInDay;
-            hours = hours - (days * hoursInDay);
-            String travelTimeText = STR."\{days}d \{hours}h";
-            travelTime.add(travelTimeText);
+            travelTime.add(hours);
         }
         return travelTime;
     }
@@ -268,45 +263,64 @@ public class BestDealCalculator {
         return companies;
     }
 
-    private String pathSetter(List<String> prettyPrint, String value) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < prettyPrint.size(); i++) {
-            stringBuilder.append("<br><form actions=\"\" method=\"post\">");
-            stringBuilder.append(STR."<button name=\"routeName\" type=\"submit\" value=\"\{value}\{i+1}\">Reserve route nr \{i+1}</button>");
-            stringBuilder.append(STR." \{prettyPrint.get(i)}");
-            stringBuilder.append("</form><br>");
-        }
-        return stringBuilder.toString();
-    }
-
     static class Test{
+        public Long getPrice() {
+            return price;
+        }
+
+        public String getTravelTime() {
+            return travelTime;
+        }
+
+        public Long getDistance() {
+            return distance;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public String getCompany() {
+            return company;
+        }
+
         Long price;
         String travelTime;
-        String routeDistance;
+        Long distance;
         String path;
         String company;
 
-        public Test(long price, String travelTime, String routeDistance, String path, String company) {
+        public Test(long price, String travelTime, Long distance, String path, String company) {
             this.price = price;
             this.travelTime = travelTime;
-            this.routeDistance = routeDistance;
+            this.distance = distance;
             this.path = path;
             this.company = company;
         }
+    }
+
+    private String travelTimeToString(Long totalTravelTime) {
+        int hoursInDay = 24;
+        long hours = totalTravelTime;
+        long days = hours / hoursInDay;
+        hours = hours - (days * hoursInDay);
+        return STR."\{days}d \{hours}h";
     }
 
     /**
      * Prints out all routes filtered by companies, providing the best prices and travel distances
      * along with company names being used.
      */
-    private void prettyPrintPaths(Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes, List<List<RouteInfo>> allPossibleRoutes, String originPlanet) {
+    private void prettyPrintPaths(Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes, List<List<RouteInfo>> allPossibleRoutes, String originPlanet, String filterBy) {
+        int showMaxNumberOfCombinationsPerRoute = 3;
         List<Long> totalDistance = routesDistance(allPossibleRoutes);
-        Map<Integer, List<String>> totalTravelTime = totalTravelTimeForAllProviders(allPossibleProviderCombinationForAllRoutes);
+        Map<Integer, List<Long>> totalTravelTime = totalTravelTimeForAllProviders(allPossibleProviderCombinationForAllRoutes);
         Map<Integer, List<Long>> totalPrice = totalPriceTagForAllProviders(allPossibleProviderCombinationForAllRoutes);
         List<List<String>> companies = companiesUsedForTravel(allPossibleProviderCombinationForAllRoutes);
         List<Test> test = new ArrayList<>();
+        List<List<Provider>> listForGettingUserChoice = new ArrayList<>();
         for (int i = 0; i < allPossibleProviderCombinationForAllRoutes.size(); i++) {
-            for (int j = 0; j < allPossibleProviderCombinationForAllRoutes.get(i).size(); j++) {
+            for (int j = 0; j < allPossibleProviderCombinationForAllRoutes.get(i).size() && j < showMaxNumberOfCombinationsPerRoute; j++) {
                 List<RouteInfo> allPath = allPossibleRoutes.get(i);
                 List<String> planetName = new ArrayList<>();
                 planetName.add(originPlanet);
@@ -318,119 +332,37 @@ public class BestDealCalculator {
                         }
                     }
                 }
-                totalTravelTime.get(i).get(j);
-                test.add(new Test(totalPrice.get(i).get(j), totalTravelTime.get(i).get(j), String.valueOf(totalDistance.get(i)), String.join(" -> ", planetName), companies.get(i).get(j)));
+                test.add(new Test(totalPrice.get(i).get(j), travelTimeToString(totalTravelTime.get(i).get(j)), totalDistance.get(i), String.join(" -> ", planetName), companies.get(i).get(j)));
+                listForGettingUserChoice.add(allPossibleProviderCombinationForAllRoutes.get(i).get(j));
             }
         }
-        List<Test> testSorted = test.stream().sorted((o1, o2) -> o1.price.compareTo(o2.price)).toList();
+        List<Test> testSorted = switch (filterBy) {
+            case "price" -> test.stream().sorted(Comparator.comparing(Test::getDistance).thenComparing(Test::getPrice)).toList();
+            case "time" -> test.stream().sorted(Comparator.comparing(Test::getDistance)).toList();
+            default -> throw new IllegalStateException("Unexpected value: " + filterBy);
+        };
+
+        List<List<Provider>> sortedListForGettingUserChoice = new ArrayList<>();
         for (int i = 0; i < testSorted.size(); i++) {
-            System.out.println(testSorted.get(i).path);
-            System.out.println("Cost: " + testSorted.get(i).price + " | travel time " + test.get(i).travelTime + " | distance " + test.get(i).routeDistance);
-            System.out.println(testSorted.get(i).company);
-        }
-    }
-
-/*
-    private void storeUserChoice(List<List<Provider>> suitableProvidersWithLowestCost, int userRouteChoice, String userFirstName, String userLastName) {
-        String reservation = "INSERT INTO reservation(" +
-                "uuid, first_name, last_name)" +
-                "VALUES (?, ?, ?)";
-        UUID reservationUuid = UUID.randomUUID();
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(reservation);
-            preparedStatement.setObject(1, reservationUuid);
-            preparedStatement.setString(2, userFirstName);
-            preparedStatement.setString(3, userLastName);
-            preparedStatement.execute();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-
-        String reservedRoutes = "INSERT INTO reserved_routes(" +
-                "uuid, reservation_uuid, provider_uuid)" +
-                "VALUES (?, ?, ?)";
-        for (int i = 0; i < suitableProvidersWithLowestCost.get(userRouteChoice - 1).size(); i++) {
-            try {
-                UUID reservedRoutesUuid = UUID.randomUUID();
-                PreparedStatement preparedStatement = connection.prepareStatement(reservedRoutes);
-                preparedStatement.setObject(1, reservedRoutesUuid);
-                preparedStatement.setObject(2, reservationUuid);
-                preparedStatement.setObject(3, UUID.fromString(suitableProvidersWithLowestCost.get(userRouteChoice - 1).get(i).getUuid()));
-                preparedStatement.execute();
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-            }
-        }
-    }*/
-
-
-
-
-
-
-
-    //--------- GRAVEYARD ------------
-
-
-    /*
-    /**
-     * Takes in the suitable Provider list and filters out duplicate routes
-     * by cheapest price.
-     * Returns a list with suitable Providers information containing only the lowest
-     * price options.
-     */
-/*
-    private List<List<Provider>> getLowestPrice(List<List<Provider>> suitableProvidersByRoute) {
-        List<List<Provider>> suitableProvidersWithLowestCost = new ArrayList<>();
-        for (List<Provider> providers : suitableProvidersByRoute) {
-            List<Provider> tempList = new ArrayList<>();
-            for (Provider provider : providers) {
-                tempList.add(provider);
-                for (int k = 0; k < tempList.size(); k++) {
-                    if (tempList.get(k).getRoute_info_uuid().equals(provider.getRoute_info_uuid())) {
-                        if (tempList.get(k).getPrice() > provider.getPrice()) {
-                            tempList.remove(k);
-                        } else if (tempList.get(k).getPrice() < provider.getPrice()) {
-                            tempList.removeLast();
-                        }
-                    }
+            for (int j = 0; j < test.size(); j++) {
+                if (test.get(j).equals(testSorted.get(i))) {
+                    sortedListForGettingUserChoice.add(i, listForGettingUserChoice.get(j));
                 }
             }
-            suitableProvidersWithLowestCost.add(tempList);
         }
-        return suitableProvidersWithLowestCost;
-    }
+        RequestHandler.setSortedListForGettingUserChoice(sortedListForGettingUserChoice);
 
-     private List<List<Provider>> getFastestTravelTime(List<List<Provider>> suitableProvidersByRoute) {
-        List<List<Provider>> suitableProvidersWithFastestTravel = new ArrayList<>();
-        for (List<Provider> providers : suitableProvidersByRoute) {
-            List<Provider> tempList = new ArrayList<>();
-            for (Provider provider : providers) {
-                tempList.add(provider);
-                for (int k = 0; k < tempList.size(); k++) {
-                    if (tempList.get(k).getRoute_info_uuid().equals(provider.getRoute_info_uuid())) {
-                        Timestamp tempListStart = Timestamp.valueOf(tempList.get(k).getFlight_start().toString().replace("+03", ""));
-                        Timestamp tempListEnd = Timestamp.valueOf(tempList.get(k).getFlight_end().toString().replace("+03", ""));
-                        double tempListDiff = tempListEnd.getTime() - tempListStart.getTime();
-                        Timestamp providerStart = Timestamp.valueOf(provider.getFlight_start().toString().replace("+03", ""));
-                        Timestamp providerEnd = Timestamp.valueOf(provider.getFlight_end().toString().replace("+03", ""));
-                        double providerDiff = providerEnd.getTime() - providerStart.getTime();
-                        if (tempListDiff > providerDiff) {
-                            tempList.remove(k);
-                        } else if (tempListDiff < providerDiff) {
-                            tempList.removeLast();
-                        }
-                    }
-                }
-            }
-            suitableProvidersWithFastestTravel.add(tempList);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < testSorted.size(); i++) {
+            stringBuilder.append("<br><form actions=\"\" method=\"post\">");
+            stringBuilder.append(STR."<button name=\"routeName\" type=\"submit\" value=\"\{i+1}\">Reserve route nr \{i+1}</button><br>");
+            stringBuilder.append(STR."Route path: \{testSorted.get(i).path}<br>");
+            stringBuilder.append(STR."Companies: \{testSorted.get(i).company}<br>");
+            stringBuilder.append(STR."Price: \{testSorted.get(i).price} credits | travel time \{testSorted.get(i).travelTime} | distance \{testSorted.get(i).distance} km<br>");
+            stringBuilder.append("</form><br>");
         }
-        return suitableProvidersWithFastestTravel;
+        RequestHandler.setPath(stringBuilder.toString());
     }
-
-     */
-
-
 }
 
 

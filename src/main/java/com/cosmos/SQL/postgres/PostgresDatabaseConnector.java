@@ -76,8 +76,7 @@ public class PostgresDatabaseConnector {
             String databaseTime = getDatabaseResponse(sql, connection);
             ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("GMT"));
             String currentTime = Timestamp.valueOf(zonedDateTime.toLocalDateTime()).toString();
-            //int isDatabaseValid = databaseTime.compareTo(currentTime);
-            int isDatabaseValid = 1;
+            int isDatabaseValid = databaseTime.compareTo(currentTime);
             if (isDatabaseValid < 0) {
                 databaseIndex++;
                 checkIfApiHasValidDate(databaseIndex);
@@ -128,6 +127,16 @@ public class PostgresDatabaseConnector {
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+        }
+        int maxNumberOfDatabases = 15;
+        if (databaseIndex > maxNumberOfDatabases) {
+            String deleteReservations = "DELETE FROM reserved_routes; DELETE FROM reservation;";
+            try (Connection connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + "cosmosodyssey" + (databaseIndex - maxNumberOfDatabases), username, password)) {
+                Statement statement = connection.createStatement();
+                statement.execute(deleteReservations);
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 }
