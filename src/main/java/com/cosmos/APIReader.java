@@ -9,6 +9,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
+/**
+ * This class reads the data provided by the api and returns it as a JSON object.
+ */
 public class APIReader {
 
     public JSONObject getJsonDataFromAPI() throws IOException {

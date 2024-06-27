@@ -1,6 +1,6 @@
 package com.cosmos.SQL.postgres;
 
-import com.cosmos.SQL.SQLDatabaseTableCreator;
+import com.cosmos.SQL.SQLDatabaseTableWriter;
 import com.cosmos.SQL.postgres.initiator.Planet;
 import com.cosmos.SQL.postgres.initiator.Provider;
 import org.json.JSONArray;
@@ -11,16 +11,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class PostgresTableCreator implements SQLDatabaseTableCreator {
+/**
+ * This class inserts the data provided by the API to the database.
+ */
+public class PostgresTableWriter implements SQLDatabaseTableWriter {
 
     private JSONObject apiData;
     private static Connection connection;
 
-    public PostgresTableCreator (Connection connection) {
-        PostgresTableCreator.connection = connection;
+    public PostgresTableWriter(Connection connection) {
+        PostgresTableWriter.connection = connection;
     }
 
-    public String createAllTables(JSONObject apiData) throws SQLException {
+    /**
+     * This method is called when the database is created for the first time.
+     * Calls the methods to insert apiData to the database's respective tables.
+     * @return a valid price list back to the caller.
+     */
+    public String insertDataToAllTables(JSONObject apiData) throws SQLException {
         this.apiData = apiData;
         String priceListUuid = insertPriceListTable();
         insertPlanetTable();
@@ -30,7 +38,12 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         return priceListUuid;
     }
 
-    public String createTables(JSONObject apiData) throws SQLException {
+    /**
+     * This method is called when the database requires an update.
+     * Calls the methods to insert apiData to the database's respective tables.
+     * @return a valid price list back to the caller.
+     */
+    public String insertDataToTables(JSONObject apiData) throws SQLException {
         this.apiData = apiData;
         String priceListUuid = insertPriceListTable();
         insertRouteInfoTable(priceListUuid);
@@ -38,6 +51,11 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         insertProviderTable();
         return priceListUuid;
     }
+
+    /**
+     * Inserts the price list information to the database.
+     * @return the price list UUID provided by the API.
+     */
 
     private String insertPriceListTable() throws SQLException {
         String uuid = apiData.getString("id");
@@ -56,6 +74,9 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         return uuid;
     }
 
+    /**
+     * Inserts planet information to the database.
+     */
     private void insertPlanetTable() throws SQLException {
         String sql = "INSERT INTO planet(" +
                 "uuid, name)" +
@@ -85,14 +106,13 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         }
     }
 
+    /**
+     * Checks for the uniqueness of the names of the planets. If the planet does not exist, it is added
+     * to the database. If it exists, duplicates are ignored. A new unique UUID is added for each planet.
+     */
+
     private void checkUniquesAndInsert(ArrayList<String> planetList, String name, PreparedStatement preparedStatement) throws SQLException {
-        boolean isNameUnique = true;
-        for (String s : planetList) {
-            if (name.equals(s)) {
-                isNameUnique = false;
-                break;
-            }
-        }
+        boolean isNameUnique = !planetList.contains(name);
         if (isNameUnique) {
             UUID uuid = UUID.randomUUID();
             preparedStatement.setObject(1, uuid);
@@ -100,6 +120,11 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
             preparedStatement.execute();
         }
     }
+
+    /**
+     * Inserts route information to the database.
+     */
+
     private void insertRouteInfoTable(String priceListUuid) throws SQLException {
         String sql = "INSERT INTO route_info(" +
                 "uuid, price_list_uuid, from_planet_uuid, to_planet_uuid, distance)" +
@@ -125,16 +150,17 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
             preparedStatement.setObject(1,UUID.fromString(id));
             preparedStatement.setObject(2,UUID.fromString(priceListUuid));
             String name = from.getString("name");
+
             for (Planet planet : planetList) {
-                if (name.equals(planet.getName())) {
-                    preparedStatement.setObject(3, UUID.fromString(planet.getUuid()));
+                if (name.equals(planet.name())) {
+                    preparedStatement.setObject(3, UUID.fromString(planet.uuid()));
                     break;
                 }
             }
             name = to.getString("name");
             for (Planet planet : planetList) {
-                if (name.equals(planet.getName())) {
-                    preparedStatement.setObject(4, UUID.fromString(planet.getUuid()));
+                if (name.equals(planet.name())) {
+                    preparedStatement.setObject(4, UUID.fromString(planet.uuid()));
                     break;
                 }
             }
@@ -142,6 +168,10 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
             preparedStatement.execute();
         }
     }
+
+    /**
+     * Inserts company information to the database.
+     */
 
     private void insertCompanyTable() throws SQLException {
         String sql = "INSERT INTO company(" +
@@ -182,6 +212,10 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         }
     }
 
+    /**
+     * Inserts provider information to the database.
+     */
+
     private void insertProviderTable() throws SQLException {
         String sql = "INSERT INTO provider(" +
                 "uuid, company_uuid, route_info_uuid, price, flight_start, flight_end)" +
@@ -216,6 +250,10 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
         }
     }
 
+    /**
+     * Inserts reservation information to the database.
+     */
+
     public void storeUserChoice(List<List<Provider>> sortedListForGettingUserChoice, int routeNumber, String userFirstName, String userLastName) {
         String reservation = "INSERT INTO reservation(" +
                 "uuid, first_name, last_name)" +
@@ -240,7 +278,7 @@ public class PostgresTableCreator implements SQLDatabaseTableCreator {
                 PreparedStatement preparedStatement = connection.prepareStatement(reservedRoutes);
                 preparedStatement.setObject(1, reservedRoutesUuid);
                 preparedStatement.setObject(2, reservationUuid);
-                preparedStatement.setObject(3, UUID.fromString(sortedListForGettingUserChoice.get(routeNumber - 1).get(i).getUuid()));
+                preparedStatement.setObject(3, UUID.fromString(sortedListForGettingUserChoice.get(routeNumber - 1).get(i).uuid()));
                 preparedStatement.execute();
             } catch (SQLException e) {
                 System.out.println(e.getMessage());

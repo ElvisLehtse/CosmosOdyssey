@@ -2,7 +2,7 @@ package com.cosmos.server;
 
 import com.cosmos.SQL.postgres.BestDealCalculator;
 import com.cosmos.SQL.postgres.PostgresDatabaseConnector;
-import com.cosmos.SQL.postgres.PostgresTableCreator;
+import com.cosmos.SQL.postgres.PostgresTableWriter;
 import com.cosmos.SQL.postgres.initiator.Provider;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -15,8 +15,27 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class handles get and post requests
+ */
 public class RequestHandler {
+    private static String path;
+    private static List<List<Provider>> sortedListForGettingUserChoice;
+    private String originPlanet;
+    private String destinationPlanet;
+    private int routeNumber;
 
+    public static void setPath(String path) {
+        RequestHandler.path = path;
+    }
+    public static void setSortedListForGettingUserChoice(List<List<Provider>> sortedListForGettingUserChoice) {
+        RequestHandler.sortedListForGettingUserChoice = sortedListForGettingUserChoice;
+    }
+
+    /**
+     * Reads the front-end code from the html file.
+     * @return it as a string.
+     */
     private String htmlReader() throws IOException {
         Path hmtlPath = Path.of("CosmosOdyssey.html");
         return Files.readString(hmtlPath);
@@ -27,6 +46,10 @@ public class RequestHandler {
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
         return new BufferedReader(inputStreamReader);
     }
+
+    /**
+     * Provides a response message to the client.
+     */
 
     private void serverResponse (HttpExchange exchange, String reply) {
         try {
@@ -41,19 +64,9 @@ public class RequestHandler {
         }
     }
 
-    private static String path;
-    private static List<List<Provider>> sortedListForGettingUserChoice;
-    private String originPlanet;
-    private String destinationPlanet;
-    private int routeNumber;
-
-    public static void setPath(String path) {
-        RequestHandler.path = path;
-    }
-    public static void setSortedListForGettingUserChoice(List<List<Provider>> sortedListForGettingUserChoice) {
-        RequestHandler.sortedListForGettingUserChoice = sortedListForGettingUserChoice;
-    }
-
+    /**
+     * This method handles the GET and POST requests from the client.
+     */
     public void requestGetAndPost (HttpServer server, String requestPath) {
         server.createContext(requestPath, (HttpExchange exchange) ->
         {
@@ -80,6 +93,10 @@ public class RequestHandler {
         });
     }
 
+    /**
+     * Filters the query information from the POST request. Depending on the query information,
+     * values are stored and proper response messages are modified before returning a reply message.
+     */
     BestDealCalculator bestDealCalculator = new BestDealCalculator();
     private String filterQueryParams(String query) throws IOException, SQLException {
         List<String> userDefinedCompanyNames = new ArrayList<>();
@@ -94,7 +111,7 @@ public class RequestHandler {
             String name = keyValue[0];
             String value = keyValue[1];
             switch (name) {
-                case "originplanet" -> {;
+                case "originplanet" -> {
                     originPlanet = value;
                     filterBy = initialFiltering;
                     postRequestNumber = 1;
@@ -156,8 +173,8 @@ public class RequestHandler {
 
             case 4 -> {
                 Connection connection = PostgresDatabaseConnector.connection();
-                PostgresTableCreator postgresTableCreator = new PostgresTableCreator(connection);
-                postgresTableCreator.storeUserChoice(sortedListForGettingUserChoice, routeNumber, firstName, lastName);
+                PostgresTableWriter postgresTableWriter = new PostgresTableWriter(connection);
+                postgresTableWriter.storeUserChoice(sortedListForGettingUserChoice, routeNumber, firstName, lastName);
                 htmlString = htmlReader();
                 htmlString = htmlString.replace("displayOfPlanetSelection", "none");
                 htmlString = htmlString.replace("displayOfResultSelection", "none");

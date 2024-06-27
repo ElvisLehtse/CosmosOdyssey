@@ -1,17 +1,22 @@
 package com.cosmos.SQL.postgres;
 
 import com.cosmos.APIReader;
-import com.cosmos.SQL.SQLDatabaseTableCreator;
+import com.cosmos.SQL.SQLDatabaseTableWriter;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
 import java.util.Scanner;
 
+/**
+ * This class connects to the PostgreSQL server, creates the database and its tables if not existing already
+ * and calls for the updating of the database with valid price list data.
+ */
 public class PostgresDatabaseConnector {
-
     private static String host;
     private static String port;
     private static String database;
@@ -21,6 +26,10 @@ public class PostgresDatabaseConnector {
     public static Connection connection() throws SQLException {
         return DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + database, username, password);
     }
+
+    /**
+     * Provides information for connecting with PostgreSQL database.
+     */
     private static void settings() {
         File file = new File("Postgres credentials.txt");
         try {
@@ -31,7 +40,7 @@ public class PostgresDatabaseConnector {
             username = scanner.nextLine().replace("user=", "");
             password = scanner.nextLine().replace("pass=", "");
         } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
+            System.out.println(STR."\{e.getMessage()} Could not find the file containing name and password for the database");
         }
     }
 
@@ -45,23 +54,64 @@ public class PostgresDatabaseConnector {
         return returnString;
     }
 
-    public static String checkIfDatabaseExists() throws IOException {
+    /**
+     * Checks if the correct database exists in the server. If the database doesn't exist, calls for
+     * the next method to create a new database. If the database exists, calls for a method to check
+     * if the database has a valid price list.
+     * @return a valid price list back to the caller.
+     */
+    public static String checkIfDatabaseExists() {
         String sql = "SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE datname = 'cosmosodyssey');";
         String priceListUuid = "";
         settings();
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/", username, password)) {
-            String databaseStatus = getDatabaseResponse(sql, connection);
-            if (databaseStatus.equals("f")) {
+            String doesDatabaseExist = getDatabaseResponse(sql, connection);
+            if (doesDatabaseExist.equals("f")) {
                 priceListUuid = createNewDatabase();
-            } else if (databaseStatus.equals("t")) {
+            } else if (doesDatabaseExist.equals("t")) {
                 priceListUuid = checkIfDatabaseHasValidPriceList();
             }
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println(e.getMessage());
         }
         return priceListUuid;
     }
 
+    /**
+     * Creates a new database to the server if database doesn't exist. Then connects to the database and
+     * creates tables for the database provided by the sql file. Calls for the APIReader to provide the
+     * newest data and finally calls for the newest data to be placed into the database.
+     * @return a valid price list back to the caller.
+     */
+    private static String createNewDatabase() {
+        String createNewDatabase = "CREATE DATABASE CosmosOdyssey";
+        String priceListUuid = "";
+        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/", username, password)) {
+            Statement statement = connection.createStatement();
+            statement.execute(createNewDatabase);
+            try (Connection newConnection = connection()) {
+                Path sqlPath = Path.of("Create SQL tables.sql");
+                String sqlText = Files.readString(sqlPath);
+                statement = newConnection.createStatement();
+                statement.execute(sqlText);
+                APIReader apiReader = new APIReader();
+                JSONObject apiData = apiReader.getJsonDataFromAPI();
+                SQLDatabaseTableWriter sqlDatabaseTableWriter = new PostgresTableWriter(newConnection);
+                priceListUuid = sqlDatabaseTableWriter.insertDataToAllTables(apiData);
+            } catch (SQLException | IOException e) {
+                System.out.println(e.getMessage());
+            }
+        } catch (SQLException e) {
+            System.out.println(STR."\{e.getMessage()} Could not connect to the server.");
+        }
+        return priceListUuid;
+    }
+
+    /**
+     * Checks if the database has a valid price list. If no valid price list is found, calls
+     * for a method to add a new price list.
+     * @return a valid price list back to the caller.
+     */
     private static String checkIfDatabaseHasValidPriceList() throws IOException {
         String sql = "SELECT uuid FROM price_list WHERE valid_until > NOW() - INTERVAL '3h';";
         String priceListUuid = "";
@@ -71,49 +121,26 @@ public class PostgresDatabaseConnector {
                 priceListUuid = addNewPriceList();
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.out.println(STR."\{e.getMessage()} Could not connect to the server");
         }
         return priceListUuid;
     }
+
+    /**
+     * Calls for the APIReader to provide the newest data and then
+     * calls for the newest data to be placed into the database.
+     * @return a valid price list back to the caller.
+     */
 
     private static String addNewPriceList() throws IOException {
         APIReader apiReader = new APIReader();
         JSONObject apiData = apiReader.getJsonDataFromAPI();
         String priceListUuid = "";
         try (Connection connection = connection()) {
-            SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(connection);
-            priceListUuid = sqlDatabaseTableCreator.createTables(apiData);
+            SQLDatabaseTableWriter sqlDatabaseTableWriter = new PostgresTableWriter(connection);
+            priceListUuid = sqlDatabaseTableWriter.insertDataToTables(apiData);
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-        return priceListUuid;
-    }
-
-    private static String createNewDatabase() {
-        String createNewDatabase = "CREATE DATABASE CosmosOdyssey";
-        String priceListUuid = "";
-        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/", username, password)) {
-            Statement statement = connection.createStatement();
-            statement.execute(createNewDatabase);
-            try (Connection newConnection = connection()) {
-                File file = new File("Create SQL tables.txt");
-                Scanner scanner = new Scanner(file);
-                StringBuilder stringBuilder = new StringBuilder();
-                while (scanner.hasNextLine()) {
-                    stringBuilder.append(scanner.nextLine());
-                }
-                String createTablesSQLFullText = stringBuilder.toString();
-                statement = newConnection.createStatement();
-                statement.execute(createTablesSQLFullText);
-                APIReader apiReader = new APIReader();
-                JSONObject apiData = apiReader.getJsonDataFromAPI();
-                SQLDatabaseTableCreator sqlDatabaseTableCreator = new PostgresTableCreator(newConnection);
-                priceListUuid = sqlDatabaseTableCreator.createAllTables(apiData);
-            } catch (SQLException | IOException e) {
-                System.out.println(e.getMessage());
-            }
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.out.println(STR."\{e.getMessage()} Could not connect to the server");
         }
         return priceListUuid;
     }

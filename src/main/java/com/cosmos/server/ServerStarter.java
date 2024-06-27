@@ -5,6 +5,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+/**
+ * This class starts the localhost server.
+ */
+
 public class ServerStarter {
 
     public void startServer() {
