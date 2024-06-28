@@ -56,7 +56,6 @@ public class PostgresTableWriter implements SQLDatabaseTableWriter {
      * Inserts the price list information to the database.
      * @return the price list UUID provided by the API.
      */
-
     private String insertPriceListTable() throws SQLException {
         String uuid = apiData.getString("id");
         String validUntil = apiData.getString("validUntil");
@@ -110,7 +109,6 @@ public class PostgresTableWriter implements SQLDatabaseTableWriter {
      * Checks for the uniqueness of the names of the planets. If the planet does not exist, it is added
      * to the database. If it exists, duplicates are ignored. A new unique UUID is added for each planet.
      */
-
     private void checkUniquesAndInsert(ArrayList<String> planetList, String name, PreparedStatement preparedStatement) throws SQLException {
         boolean isNameUnique = !planetList.contains(name);
         if (isNameUnique) {
@@ -124,7 +122,6 @@ public class PostgresTableWriter implements SQLDatabaseTableWriter {
     /**
      * Inserts route information to the database.
      */
-
     private void insertRouteInfoTable(String priceListUuid) throws SQLException {
         String sql = "INSERT INTO route_info(" +
                 "uuid, price_list_uuid, from_planet_uuid, to_planet_uuid, distance)" +
@@ -172,7 +169,6 @@ public class PostgresTableWriter implements SQLDatabaseTableWriter {
     /**
      * Inserts company information to the database.
      */
-
     private void insertCompanyTable() throws SQLException {
         String sql = "INSERT INTO company(" +
                 "uuid, name)" +
@@ -215,7 +211,6 @@ public class PostgresTableWriter implements SQLDatabaseTableWriter {
     /**
      * Inserts provider information to the database.
      */
-
     private void insertProviderTable() throws SQLException {
         String sql = "INSERT INTO provider(" +
                 "uuid, company_uuid, route_info_uuid, price, flight_start, flight_end)" +
@@ -253,7 +248,6 @@ public class PostgresTableWriter implements SQLDatabaseTableWriter {
     /**
      * Inserts reservation information to the database.
      */
-
     public void storeUserChoice(List<List<Provider>> sortedListForGettingUserChoice, int routeNumber, String userFirstName, String userLastName) {
         String reservation = "INSERT INTO reservation(" +
                 "uuid, first_name, last_name)" +

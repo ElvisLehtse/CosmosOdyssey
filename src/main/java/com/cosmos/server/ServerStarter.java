@@ -8,7 +8,6 @@ import java.net.InetSocketAddress;
 /**
  * This class starts the localhost server.
  */
-
 public class ServerStarter {
 
     public void startServer() {

@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
  * This class computes the best possible choices per price or travel time and filters
  * companies based on end user choice.
  */
-
 public class BestDealCalculator {
 
     static class PrettyPrintInformation {
@@ -71,7 +70,6 @@ public class BestDealCalculator {
      * Takes in the names of the companies selected by the end user and
      * returns their respective UUID-s.
      */
-
     private List<String> companySetup(List<String> userDefinedCompanyNames) {
         List<String> listOfDefinedCompanyUuid = new ArrayList<>();
         for (String selectedCompanies : userDefinedCompanyNames) {
@@ -88,7 +86,6 @@ public class BestDealCalculator {
      * This method initiates other methods responsible for generating suitable route and provider information,
      * providing initial settings for them.
      */
-
     public void generateSolutions(String originPlanet, String destinationPlanet, List<String> companiesList, String filterBy) {
         List<String> listOfDefinedCompanyUuid = companySetup(companiesList);
         List<String> listOfDefinedPlanetUuid = planetSetup(originPlanet, destinationPlanet);
@@ -104,7 +101,6 @@ public class BestDealCalculator {
      * This method is called when no companies are filtered by the end user. It provides
      * all valid companies from the database to select from.
      */
-
     public void generateUnfilteredSolutions(String originPlanet, String destinationPlanet, String filterBy) {
         List<String> allCompaniesList = new ArrayList<>();
         for (Company company : companyList) {
@@ -120,7 +116,6 @@ public class BestDealCalculator {
      * The inner list contains routeInfo to a specific route pattern,
      * ie in case 2, it has the routeInfo for A: Jupiter -> Mars and B: Mars -> Venus
      */
-
     private List<List<RouteInfo>> findAllPossibleRoutes(String originPlanet, String destinationPlanet, List<String> currentPath,
                                                      List<RouteInfo> listOfRoutes, List<List<RouteInfo>> allPossibleRoutes, RouteInfo routeInfo) {
         currentPath.add(originPlanet);
@@ -147,7 +142,6 @@ public class BestDealCalculator {
      * @return routes with provider information as a list within a list,
      * containing provider uuid, company uuid, route info uuid, price, flight start and flight end information.
      */
-
     private List<List<Provider>> suitableProvidersFiltered(List<String> companyListProvidedByUser, List<List<RouteInfo>> allPossibleRoutes, String filterBy) {
         int maximumLimitOfProvidersPerRoute = 3;
 
@@ -259,7 +253,6 @@ public class BestDealCalculator {
      * Calculates the total distances for all possible routes.
      * Route distances are returned as a list.
      */
-
     private static List<Long> routesDistance(List<List<RouteInfo>> allPossibleRoutes) {
         List<Long> routeDistance = new ArrayList<>();
         for (List<RouteInfo> allPossibleRoute : allPossibleRoutes) {
@@ -277,7 +270,6 @@ public class BestDealCalculator {
      * The integer represents the route pattern.
      * The list contains prices of corresponding combinations of providers specific to a route pattern.
      */
-
     private Map<Integer, List<Long>> totalPriceTagForAllProviders(Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes) {
         Map<Integer, List<Long>> totalPriceMap = new HashMap<>();
         for (int i = 0; i < allPossibleProviderCombinationForAllRoutes.size(); i++) {
@@ -327,7 +319,6 @@ public class BestDealCalculator {
      * and the inner list to the names of the companies used per provider combination.
      * The companies are linked together to form a travel path.
      */
-
     private List<List<String>> companiesUsedForTravel(Map<Integer, List<List<Provider>>> allPossibleProviderCombinationForAllRoutes) {
         List<List<String>> companies = new ArrayList<>();
         for (int i = 0; i < allPossibleProviderCombinationForAllRoutes.size(); i++) {

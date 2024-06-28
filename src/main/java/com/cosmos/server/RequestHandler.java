@@ -19,10 +19,10 @@ import java.util.List;
  * This class handles get and post requests
  */
 public class RequestHandler {
-    private static String path;
+    private static String path = "";
     private static List<List<Provider>> sortedListForGettingUserChoice;
-    private String originPlanet;
-    private String destinationPlanet;
+    private String originPlanet = "";
+    private String destinationPlanet = "";
     private int routeNumber;
 
     public static void setPath(String path) {
@@ -50,7 +50,6 @@ public class RequestHandler {
     /**
      * Provides a response message to the client.
      */
-
     private void serverResponse (HttpExchange exchange, String reply) {
         try {
             exchange.sendResponseHeaders(200, reply.length());
@@ -65,6 +64,22 @@ public class RequestHandler {
     }
 
     /**
+     * Configures the response message for the client.
+     */
+    private String htmlMessageConfigurator(String planet, String error, String result, String register, String success) throws IOException {
+        String htmlString = htmlReader();
+        htmlString = htmlString.replace("$originPlanet", originPlanet);
+        htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
+        htmlString = htmlString.replace("$path", path);
+        htmlString = htmlString.replace("displayOfPlanetSelection", planet);
+        htmlString = htmlString.replace("displayOfErrorMessage", error);
+        htmlString = htmlString.replace("displayOfResultSelection", result);
+        htmlString = htmlString.replace("displayOfRegisterSelection", register);
+        htmlString = htmlString.replace("displaySuccessfulRegistration", success);
+        return htmlString;
+    }
+
+    /**
      * This method handles the GET and POST requests from the client.
      */
     public void requestGetAndPost (HttpServer server, String requestPath) {
@@ -73,12 +88,7 @@ public class RequestHandler {
             String reply = "";
             try {
                 if (exchange.getRequestMethod().equals("GET")) {
-                    String htmlString = htmlReader();
-                    htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
-                    htmlString = htmlString.replace("displayOfResultSelection", "none");
-                    htmlString = htmlString.replace("displayOfRegisterSelection", "none");
-                    htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
-                    reply = htmlString;
+                    reply = htmlMessageConfigurator("unset", "none", "none", "none", "none");
                 } else if (exchange.getRequestMethod().equals("POST")) {
                     BufferedReader requestBody = requestBodyMsg(exchange);
                     String query = requestBody.readLine();
@@ -104,6 +114,7 @@ public class RequestHandler {
         String filterBy = "";
         String firstName = "";
         String lastName = "";
+        String htmlString = "";
         int postRequestNumber = 0;
         String[] params = query.split("&");
         for (String  param : params) {
@@ -111,12 +122,15 @@ public class RequestHandler {
             String name = keyValue[0];
             String value = keyValue[1];
             switch (name) {
-                case "originplanet" -> {
-                    originPlanet = value;
+                case "originplanet" -> originPlanet = value;
+                case "destinationplanet" -> {
+                    destinationPlanet = value;
                     filterBy = initialFiltering;
                     postRequestNumber = 1;
+                    if (originPlanet.equals(destinationPlanet)) {
+                        postRequestNumber = 6;
+                    }
                 }
-                case "destinationplanet" -> destinationPlanet = value;
                 case "companies" -> {
                     userDefinedCompanyNames.add(value.replace("+", " "));
                     postRequestNumber = 2;
@@ -139,55 +153,25 @@ public class RequestHandler {
                 default -> postRequestNumber = 5;
             }
         }
-        String htmlString = "";
         switch (postRequestNumber) {
             case 1 -> {
                 bestDealCalculator.generateUnfilteredSolutions(originPlanet, destinationPlanet, filterBy);
-                htmlString = htmlReader();
-                htmlString = htmlString.replace("$originPlanet", originPlanet);
-                htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
-                htmlString = htmlString.replace("$path", path);
-                htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
-                htmlString = htmlString.replace("displayOfResultSelection", "unset");
-                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
-                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
-            }
-            case 2 -> {
-                bestDealCalculator.generateSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames, filterBy);
-                htmlString = htmlReader();
-                htmlString = htmlString.replace("$originPlanet", originPlanet);
-                htmlString = htmlString.replace("$destinationPlanet", STR."\{destinationPlanet}:");
-                htmlString = htmlString.replace("$path", path);
-                htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
-                htmlString = htmlString.replace("displayOfResultSelection", "unset");
-                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
-                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
-            }
-            case 3 -> {
-                htmlString = htmlReader();
-                htmlString = htmlString.replace("displayOfPlanetSelection", "none");
-                htmlString = htmlString.replace("displayOfResultSelection", "none");
-                htmlString = htmlString.replace("displayOfRegisterSelection", "unset");
-                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
+                htmlString = htmlMessageConfigurator("unset", "none", "unset", "none", "none");
             }
 
+            case 2 -> {
+                bestDealCalculator.generateSolutions(originPlanet, destinationPlanet, userDefinedCompanyNames, filterBy);
+                htmlString = htmlMessageConfigurator("unset", "none", "unset", "none", "none");
+            }
+            case 3 -> htmlString = htmlMessageConfigurator("none", "none", "none", "unset", "none");
             case 4 -> {
                 Connection connection = PostgresDatabaseConnector.connection();
                 PostgresTableWriter postgresTableWriter = new PostgresTableWriter(connection);
                 postgresTableWriter.storeUserChoice(sortedListForGettingUserChoice, routeNumber, firstName, lastName);
-                htmlString = htmlReader();
-                htmlString = htmlString.replace("displayOfPlanetSelection", "none");
-                htmlString = htmlString.replace("displayOfResultSelection", "none");
-                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
-                htmlString = htmlString.replace("displaySuccessfulRegistration", "unset");
+                htmlString = htmlMessageConfigurator("none", "none", "none", "none", "unset");
             }
-            case 5 -> {
-                htmlString = htmlReader();
-                htmlString = htmlString.replace("displayOfPlanetSelection", "unset");
-                htmlString = htmlString.replace("displayOfResultSelection", "none");
-                htmlString = htmlString.replace("displayOfRegisterSelection", "none");
-                htmlString = htmlString.replace("displaySuccessfulRegistration", "none");
-            }
+            case 5 -> htmlString = htmlMessageConfigurator("unset", "none", "none", "none", "none");
+            case 6 -> htmlString = htmlMessageConfigurator("unset", "unset", "none", "none", "none");
         }
         return htmlString;
     }

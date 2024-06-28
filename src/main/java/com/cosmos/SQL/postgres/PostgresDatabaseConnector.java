@@ -34,9 +34,9 @@ public class PostgresDatabaseConnector {
         File file = new File("Postgres credentials.txt");
         try {
             Scanner scanner = new Scanner(file);
-            host = "localhost";
-            port = "5432";
-            database = "cosmosodyssey";
+            host = scanner.nextLine().replace("host=", "");
+            port = scanner.nextLine().replace("port=", "");
+            database = scanner.nextLine().replace("database=", "");
             username = scanner.nextLine().replace("user=", "");
             password = scanner.nextLine().replace("pass=", "");
         } catch (FileNotFoundException e) {
@@ -131,7 +131,6 @@ public class PostgresDatabaseConnector {
      * calls for the newest data to be placed into the database.
      * @return a valid price list back to the caller.
      */
-
     private static String addNewPriceList() throws IOException {
         APIReader apiReader = new APIReader();
         JSONObject apiData = apiReader.getJsonDataFromAPI();
